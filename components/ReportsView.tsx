@@ -77,7 +77,7 @@ const TimelineItem: React.FC<{
     const hasFullTimestamp = report.timestamp && report.timestamp.includes('T');
     const timeString = hasFullTimestamp 
         ? new Date(report.timestamp!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : 'Active';
+        : 'Analysis Active';
 
     const getStatusConfig = () => {
         switch (report.status) {
@@ -97,14 +97,14 @@ const TimelineItem: React.FC<{
             layout 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative mb-4 overflow-hidden rounded-3xl group"
+            className="relative mb-8 overflow-hidden rounded-[2.5rem] group"
         >
             {/* Reveal Delete on Swipe */}
             <motion.div 
                 style={{ opacity: deleteOpacity }}
-                className="absolute inset-0 bg-rose-600 rounded-3xl flex items-center justify-end pr-10"
+                className="absolute inset-0 bg-rose-600 rounded-[2.5rem] flex items-center justify-end pr-10"
             >
-                <TrashIcon className="size-5 text-white" />
+                <TrashIcon className="size-6 text-white" />
             </motion.div>
 
             <motion.div
@@ -114,54 +114,54 @@ const TimelineItem: React.FC<{
                 onDragEnd={(_e, { offset }) => {
                     if (offset.x < -80) onDelete();
                 }}
-                className="relative bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all cursor-pointer z-10"
+                className="relative bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 p-7 shadow-glass hover:shadow-2xl transition-all cursor-pointer z-10"
                 onClick={onSelect}
             >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className={`size-12 shrink-0 rounded-xl flex items-center justify-center shadow-inner border border-white/40 dark:border-transparent ${status.iconColor}`}>
-                            <span className="material-symbols-outlined text-[24px]">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+                    <div className="flex gap-6">
+                        <div className={`size-16 shrink-0 rounded-2xl flex items-center justify-center shadow-inner border border-white/40 dark:border-transparent ${status.iconColor}`}>
+                            <span className="material-symbols-outlined text-[32px]">
                                 {status.icon}
                             </span>
                         </div>
                         <div className="min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors uppercase tracking-tight truncate">
+                            <div className="flex flex-wrap items-center gap-3 mb-2">
+                                <h4 className="text-xl font-black text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors uppercase tracking-tight truncate">
                                     {report.patientName}
                                 </h4>
-                                <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest border shadow-sm ${status.color}`}>
+                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${status.color}`}>
                                     {status.text}
                                 </span>
                             </div>
-                            <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                                {report.medication.length} Agents • Dr. {report.doctorName || 'N/A'}
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                                {report.medication.length} Agents • Dr. {report.doctorName || 'Verification Required'}
                             </p>
                         </div>
                     </div>
                     
-                    <div className="flex items-center justify-between sm:justify-end gap-4 ml-auto sm:ml-0">
-                        <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest">{timeString}</span>
-                        <div className="flex items-center gap-0.5">
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{timeString}</span>
+                        <div className="flex items-center gap-1">
                              <button 
                                 onClick={(e) => { e.stopPropagation(); onPreview(); }}
-                                className="p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all"
+                                className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all"
                                 title="Quick Preview"
                             >
-                                <EyeIcon className="size-4" />
+                                <EyeIcon className="size-5" />
                             </button>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); onDownload(); }}
                                 disabled={isDownloading}
-                                className="p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all disabled:opacity-50"
+                                className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all disabled:opacity-50"
                                 title="Download PDF"
                             >
-                                {isDownloading ? <Spinner className="size-3" /> : <DownloadIcon className="size-4" />}
+                                {isDownloading ? <Spinner className="size-4" /> : <DownloadIcon className="size-5" />}
                             </button>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); onSelect(); }}
-                                className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-white/5 text-[9px] font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-sm border border-slate-100 dark:border-white/5"
+                                className="ml-4 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 text-[10px] font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-sm"
                             >
-                                DETAILS <span className="material-symbols-outlined text-[12px]">chevron_right</span>
+                                DETAILS <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                             </button>
                         </div>
                     </div>
@@ -212,7 +212,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
 
     if (isLoading) {
         return (
-            <div className="space-y-6 py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="space-y-12 py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <ReportCardSkeleton />
                 <ReportCardSkeleton />
             </div>
@@ -223,67 +223,74 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
         return (
             <div className="flex flex-col items-center justify-center py-40 text-center animate-fadeIn max-w-lg mx-auto">
                 <div className="relative mb-12">
-                    <div className="size-32 bg-slate-50 dark:bg-zinc-900 rounded-[2.5rem] flex items-center justify-center text-slate-300 dark:text-slate-800 rotate-3 border-2 border-dashed border-slate-200 dark:border-white/5">
-                        <FolderIcon className="size-16" />
+                    <div className="size-40 bg-slate-50 dark:bg-zinc-900 rounded-[3rem] flex items-center justify-center text-slate-300 dark:text-slate-800 rotate-3 border-2 border-dashed border-slate-200 dark:border-white/5">
+                        <FolderIcon className="size-20" />
                     </div>
-                    <div className="absolute -bottom-4 -right-4 size-16 bg-brand-blue text-white rounded-3xl flex items-center justify-center shadow-2xl -rotate-6 border-4 border-white dark:border-black">
-                        <AnalyzeIcon className="size-8" />
+                    <div className="absolute -bottom-4 -right-4 size-20 bg-brand-blue text-white rounded-3xl flex items-center justify-center shadow-2xl -rotate-6 border-4 border-white dark:border-black">
+                        <AnalyzeIcon className="size-10" />
                     </div>
                 </div>
-                <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tighter">Clinical Archive Empty</h2>
-                <p className="text-slate-500 dark:text-slate-400 mb-10 text-base font-medium">
-                    Verified clinical reports will appear here automatically.
+                <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">Clinical Archive Empty</h2>
+                <p className="text-slate-500 dark:text-slate-400 mb-12 text-lg leading-relaxed font-medium">
+                    Verified clinical reports and digitized prescriptions will appear here automatically.
                 </p>
+                <div className="px-6 py-4 rounded-3xl bg-brand-blue/5 border border-brand-blue/10 inline-flex items-center gap-3">
+                    <span className="material-symbols-outlined text-brand-blue text-lg">info</span>
+                    <span className="text-[10px] text-brand-blue font-black uppercase tracking-[0.2em]">Swipe cards left to purge records permanently.</span>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            {/* Header section with smaller typography */}
-            <div className="mb-12 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 bg-white/50 dark:bg-white/5 px-4 py-1.5 rounded-full border border-slate-100 dark:border-white/5 w-fit shadow-sm">
-                        <HistoryLogIcon className="size-3" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            {/* Official Branded Header */}
+            <div className="mb-16 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-10">
+                <div className="space-y-5">
+                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 bg-white/50 dark:bg-white/5 px-5 py-2 rounded-full border border-slate-100 dark:border-white/5 w-fit shadow-sm backdrop-blur-md">
+                        <HistoryLogIcon className="size-3.5" />
+                        <span>Prescription Archive</span>
+                        <span className="size-1 rounded-full bg-slate-300"></span>
                         <span>Clinical Log</span>
                         <span className="size-1 rounded-full bg-slate-300"></span>
                         <span className="text-brand-blue">{stats.total} Active</span>
                     </div>
-                    <h1 className="font-display text-3xl sm:text-4xl font-black tracking-tighter text-slate-900 dark:text-white">
+                    <h1 className="font-display text-5xl sm:text-7xl font-black tracking-tighter text-slate-900 dark:text-white">
                         Reports & <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-green">Timeline</span>
                     </h1>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-                        <span className="material-symbols-outlined text-[16px]">filter_list</span> Filters
+                <div className="flex items-center gap-4">
+                    <button className="flex items-center gap-2.5 px-8 py-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95">
+                        <span className="material-symbols-outlined text-[18px]">filter_list</span> Filters
                     </button>
-                    <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
-                        <span className="material-symbols-outlined text-[16px]">add_circle</span> New Report
+                    <button className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black text-xs font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                        <span className="material-symbols-outlined text-[18px]">add_circle</span> New Report
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                {/* TimelineTrack */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+                {/* Clinical Timeline Track */}
                 <div className="lg:col-span-8 relative">
-                    <div className="absolute left-[29px] top-6 bottom-0 w-0.5 bg-slate-100 dark:bg-white/5 z-0 rounded-full" />
+                    {/* Vertical Progression Line */}
+                    <div className="absolute left-[39px] top-10 bottom-0 w-1 bg-gradient-to-b from-slate-100 via-slate-100/50 to-transparent dark:from-white/10 dark:via-white/5 z-0 rounded-full" />
                     
-                    <div className="space-y-12 relative z-10">
+                    <div className="space-y-20 relative z-10">
                         <AnimatePresence mode="popLayout">
                             {groupKeys.map((key) => (
                                 <motion.section 
                                     key={key}
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="space-y-6"
+                                    className="space-y-10"
                                 >
-                                    <div className="flex items-center gap-6">
-                                        <div className="size-3.5 rounded-full bg-brand-blue border-[3px] border-white dark:border-black shadow ring-4 ring-brand-blue/5" />
-                                        <h2 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{key}</h2>
+                                    <div className="flex items-center gap-8">
+                                        <div className="size-5 rounded-full bg-brand-blue border-[5px] border-white dark:border-black shadow-glow ring-[6px] ring-brand-blue/5" />
+                                        <h2 className="text-[12px] font-black text-brand-blue uppercase tracking-[0.4em] drop-shadow-sm">{key}</h2>
                                     </div>
 
-                                    <div className="pl-14">
+                                    <div className="pl-20">
                                         {groupedHistory[key].map((report) => (
                                             <TimelineItem 
                                                 key={report.id}
@@ -302,40 +309,66 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
                     </div>
                 </div>
 
-                {/* Sidebar with smaller stats */}
-                <aside className="lg:col-span-4 space-y-8 lg:sticky lg:top-24 h-fit">
-                    <div className="glass-panel p-8 rounded-[2rem] shadow-xl border-white/60 dark:border-white/10">
-                        <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-8">Summary Stats</h4>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="p-5 rounded-2xl bg-white dark:bg-black/20 border border-slate-50 dark:border-white/5 shadow-inner">
-                                <p className="text-3xl font-black text-brand-blue mb-1">{stats.total}</p>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-tight">Total<br/>Records</p>
+                {/* Diagnostic Insights Sidebar */}
+                <aside className="lg:col-span-4 space-y-10 lg:sticky lg:top-24 h-fit">
+                    {/* Summary Card */}
+                    <div className="glass-panel p-10 rounded-[3rem] shadow-2xl border-white/60 dark:border-white/10">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Quick Stats</h4>
+                        <div className="grid grid-cols-2 gap-8">
+                            <div className="p-7 rounded-[2rem] bg-white dark:bg-black/20 border border-slate-50 dark:border-white/5 shadow-inner group">
+                                <p className="text-5xl font-black text-brand-blue mb-2 transition-transform group-hover:scale-110 duration-500 origin-left">{stats.total}</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Total<br/>Reports</p>
                             </div>
-                            <div className="p-5 rounded-2xl bg-white dark:bg-black/20 border border-slate-50 dark:border-white/5 shadow-inner">
-                                <p className="text-3xl font-black text-rose-500 mb-1">{stats.needsReview}</p>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-tight">Requires<br/>Review</p>
+                            <div className="p-7 rounded-[2rem] bg-white dark:bg-black/20 border border-slate-50 dark:border-white/5 shadow-inner group">
+                                <p className="text-5xl font-black text-rose-500 mb-2 transition-transform group-hover:scale-110 duration-500 origin-left">{stats.needsReview}</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Requires<br/>Review</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="glass-panel p-8 rounded-[2rem] shadow-xl border-white/60 dark:border-white/10">
-                        <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-6">Archives</h4>
-                        <div className="space-y-2">
-                            <button className="w-full flex items-center justify-between p-4 rounded-xl bg-brand-blue/5 text-brand-blue border border-brand-blue/10 hover:bg-brand-blue/10 transition-all">
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-[20px]">prescriptions</span>
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Prescriptions</span>
+                    {/* Taxonomy Categories */}
+                    <div className="glass-panel p-10 rounded-[3rem] shadow-2xl border-white/60 dark:border-white/10">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">Classification</h4>
+                        <div className="space-y-3">
+                            <button className="w-full flex items-center justify-between p-5 rounded-[1.5rem] bg-brand-blue/5 text-brand-blue border border-brand-blue/10 hover:bg-brand-blue/10 transition-all shadow-sm">
+                                <div className="flex items-center gap-4">
+                                    <span className="material-symbols-outlined text-[22px]">prescriptions</span>
+                                    <span className="text-xs font-black uppercase tracking-widest">Prescriptions</span>
                                 </div>
-                                <span className="text-[10px] font-black">{stats.total}</span>
+                                <span className="text-xs font-black">{stats.total}</span>
                             </button>
-                            <button className="w-full flex items-center justify-between p-4 rounded-xl text-slate-300 dark:text-slate-600 opacity-50 cursor-not-allowed">
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-[20px]">radiology</span>
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Imaging</span>
+                            <button className="w-full flex items-center justify-between p-5 rounded-[1.5rem] text-slate-400 opacity-40 cursor-not-allowed border border-transparent">
+                                <div className="flex items-center gap-4">
+                                    <span className="material-symbols-outlined text-[22px]">radiology</span>
+                                    <span className="text-xs font-black uppercase tracking-widest">Imaging (Lab)</span>
                                 </div>
-                                <span className="text-[10px] font-black">0</span>
+                                <span className="text-xs font-black">0</span>
+                            </button>
+                            <button className="w-full flex items-center justify-between p-5 rounded-[1.5rem] text-slate-400 opacity-40 cursor-not-allowed border border-transparent">
+                                <div className="flex items-center gap-4">
+                                    <span className="material-symbols-outlined text-[22px]">clinical_notes</span>
+                                    <span className="text-xs font-black uppercase tracking-widest">Lab Results</span>
+                                </div>
+                                <span className="text-xs font-black">0</span>
                             </button>
                         </div>
+                    </div>
+
+                    {/* Collaborative Upload CTA */}
+                    <div className="relative overflow-hidden rounded-[3rem] bg-slate-900 p-10 text-white shadow-2xl group border border-white/10">
+                        <div className="relative z-10">
+                            <div className="size-20 bg-brand-blue/20 rounded-[1.5rem] flex items-center justify-center text-brand-blue mb-8 border border-brand-blue/20 group-hover:scale-110 duration-500">
+                                <span className="material-symbols-outlined text-[48px]">cloud_upload</span>
+                            </div>
+                            <h5 className="text-3xl font-black mb-4 tracking-tighter">Expand History</h5>
+                            <p className="mb-10 text-base text-slate-400 font-medium leading-relaxed">Sync external PDF results to maintain a holistic patient timeline.</p>
+                            <button className="w-full rounded-2xl bg-white/10 py-5 text-xs font-black uppercase tracking-widest text-white hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 active:scale-95">
+                                Browse Medical Files
+                            </button>
+                        </div>
+                        {/* Decorative Background Elements */}
+                        <div className="absolute -right-16 -top-16 size-56 rounded-full bg-brand-blue/10 blur-[80px] group-hover:bg-brand-blue/20 transition-colors duration-700"></div>
+                        <div className="absolute -left-16 -bottom-16 size-56 rounded-full bg-brand-green/5 blur-[80px]"></div>
                     </div>
                 </aside>
             </div>

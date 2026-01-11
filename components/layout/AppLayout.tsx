@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Header } from '../Header.tsx';
 import { Footer } from '../Footer.tsx';
@@ -48,11 +47,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   return (
     <div className="flex flex-col min-h-screen w-full relative bg-light-bg dark:bg-dark-bg text-slate-900 dark:text-slate-100 overflow-y-auto overflow-x-hidden">
       {/* 
-          Normal Flow Header:
-          By removing 'sticky' or 'fixed', we ensure the main content 
-          is always positioned below the header regardless of size.
+          Sticky Navigation Header:
+          Enhanced with sticky top-0 and z-index to ensure it floats 
+          above content while providing a blur transition.
       */}
-      <div className="w-full shrink-0">
+      <div className="w-full shrink-0 sticky top-0 z-[45]">
         <Header 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 

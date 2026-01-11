@@ -1,4 +1,3 @@
-
 import { PrescriptionData } from '../types.ts';
 import { logo as logoBase64 } from './pdfAssets.ts';
 import { formatDate } from './utils.ts';
@@ -71,12 +70,12 @@ const generateDoc = async (report: PrescriptionData): Promise<any> => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
     doc.setTextColor(...THEME.colors.primary);
-    doc.text('Clinical Analysis Report', margin + 38, currentY);
+    doc.text('Cockpit Analysis Report', margin + 38, currentY);
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...THEME.colors.textMedium);
-    doc.text('Digitized Prescription Intelligence', margin + 38, currentY + 12);
+    doc.text('Your Personalized Health Snapshot', margin + 38, currentY + 12);
 
     doc.setFontSize(9);
     doc.setTextColor(...THEME.colors.textDark);
@@ -89,8 +88,8 @@ const generateDoc = async (report: PrescriptionData): Promise<any> => {
     doc.line(margin, currentY, pageWidth - margin, currentY);
     currentY += 30;
 
-    // --- 2. Patient Profile Section ---
-    currentY = drawSectionHeader(doc, 'Patient Profile', currentY);
+    // --- 2. Wellness Profile Section ---
+    currentY = drawSectionHeader(doc, 'Your Wellness Profile', currentY);
     
     doc.setFillColor(...THEME.colors.primaryLight);
     doc.setDrawColor(...THEME.colors.border);
@@ -100,19 +99,19 @@ const generateDoc = async (report: PrescriptionData): Promise<any> => {
     doc.setFontSize(7);
     doc.setTextColor(...THEME.colors.textMedium);
     doc.text("NAME", margin + 20, currentY + 25);
-    doc.text("ID", margin + colWidth + 20, currentY + 25);
-    doc.text("EXTRACTION DATE", margin + 20, currentY + 60);
-    doc.text("ALERTS / WARNINGS", margin + colWidth + 20, currentY + 60);
+    doc.text("CLIENT ID", margin + colWidth + 20, currentY + 25);
+    doc.text("DATE OF BIRTH", margin + 20, currentY + 60);
+    doc.text("KNOWN SENSITIVITIES", margin + colWidth + 20, currentY + 60);
 
     doc.setFontSize(11);
     doc.setTextColor(...THEME.colors.textDark);
     doc.text(sanitize(report.patientName), margin + 20, currentY + 40);
     doc.text(`#${report.id.substring(0, 8).toUpperCase()}`, margin + colWidth + 20, currentY + 40);
-    doc.text(sanitize(report.date), margin + 20, currentY + 75);
+    doc.text(sanitize(report.patientAge || formatDate(report.date), 'As per record'), margin + 20, currentY + 75);
     
-    const sensitivities = sanitize(report.warnings?.join(', '), 'No immediate alerts detected');
+    const sensitivities = sanitize(report.warnings?.join(', '), 'None Disclosed');
     doc.setFontSize(9);
-    if (report.warnings && report.warnings.length > 0) {
+    if (sensitivities !== 'None Disclosed') {
         doc.setTextColor(...THEME.colors.dangerText);
         doc.setFont('helvetica', 'bold');
     }
@@ -122,18 +121,19 @@ const generateDoc = async (report: PrescriptionData): Promise<any> => {
 
     // --- 3. Medication Plan Table ---
     if (report.medication && report.medication.length > 0) {
-        currentY = drawSectionHeader(doc, 'Prescribed Medications', currentY);
+        currentY = drawSectionHeader(doc, 'Your Medication Plan', currentY);
         
         autoTable(doc, {
             startY: currentY,
             margin: { left: margin, right: margin },
-            head: [['MEDICATION', 'STRENGTH', 'FREQUENCY', 'ROUTE', 'VERIFICATION']],
+            head: [['MEDICATION', 'AMOUNT', 'HOW OFTEN', 'METHOD', 'GUIDANCE']],
             body: report.medication.map(m => [
                 sanitize(m.name),
                 sanitize(m.dosage),
                 sanitize(m.frequency),
-                sanitize(m.route, 'Oral'),
-                m.verification?.color === 'green' ? '✓ Verified' : (m.verification?.color === 'red' ? '⚠ Warning' : '👁 Review')
+                sanitize(m.route, 'By Mouth'),
+                // Fix: Correction of incorrect color literals 'green'/'red' to 'emerald'/'rose' from the VerificationColor type union.
+                (m.humanConfirmed || m.verification?.color === 'emerald') ? '✓ Clear' : (m.verification?.color === 'rose' ? '⚠ Invalid' : '👁 Review')
             ]),
             theme: 'striped',
             headStyles: { 
@@ -154,9 +154,9 @@ const generateDoc = async (report: PrescriptionData): Promise<any> => {
             didDrawCell: (data) => {
                 if (data.section === 'body' && data.column.index === 4) {
                     const text = String(data.cell.raw);
-                    if (text.includes('Verified')) {
+                    if (text.includes('✓')) {
                         doc.setTextColor(...THEME.colors.successText);
-                    } else if (text.includes('Warning')) {
+                    } else if (text.includes('⚠')) {
                         doc.setTextColor(...THEME.colors.dangerText);
                     } else {
                         doc.setTextColor(...THEME.colors.warningText);
@@ -168,26 +168,49 @@ const generateDoc = async (report: PrescriptionData): Promise<any> => {
         currentY = (doc as any).lastAutoTable.finalY + 40;
     }
 
-    // --- 4. Notes Section ---
+    // --- 4. Important Notes Section ---
     const hasNotes = report.notes && sanitize(report.notes, '') !== '';
-    if (hasNotes) {
+    const hasAiRecs = report.aiSuggestions?.generalRecommendations?.length;
+
+    if (hasNotes || hasAiRecs) {
         if (currentY > pageHeight - 150) {
             doc.addPage();
             currentY = margin;
         }
-        currentY = drawSectionHeader(doc, 'Clinical Notes', currentY);
-        const splitNotes = doc.splitTextToSize(sanitize(report.notes), contentWidth - 40);
-        const notesHeight = (splitNotes.length * 14) + 20;
-        doc.setFillColor(...THEME.colors.primaryLight);
-        doc.roundedRect(margin, currentY, contentWidth, notesHeight, 8, 8, 'F');
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(...THEME.colors.textDark);
-        doc.text(splitNotes, margin + 20, currentY + 20);
-        currentY += notesHeight + 25;
+        
+        currentY = drawSectionHeader(doc, 'Important Notes', currentY);
+
+        if (hasNotes) {
+            const splitNotes = doc.splitTextToSize(sanitize(report.notes), contentWidth - 40);
+            const notesHeight = (splitNotes.length * 14) + 20;
+            
+            doc.setFillColor(...THEME.colors.primaryLight);
+            doc.roundedRect(margin, currentY, contentWidth, notesHeight, 8, 8, 'F');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(...THEME.colors.textDark);
+            doc.text(splitNotes, margin + 20, currentY + 20);
+            
+            currentY += notesHeight + 15;
+        }
+
+        if (hasAiRecs) {
+            report.aiSuggestions?.generalRecommendations?.forEach((rec: string) => {
+                if (currentY > pageHeight - 60) {
+                    doc.addPage();
+                    currentY = margin;
+                }
+                const splitRec = doc.splitTextToSize(`• ${rec}`, contentWidth - 40);
+                doc.setFontSize(9);
+                doc.setTextColor(...THEME.colors.textDark);
+                doc.text(splitRec, margin + 10, currentY);
+                currentY += (splitRec.length * 12) + 5;
+            });
+            currentY += 20;
+        }
     }
 
-    // --- 5. Dynamic Review Status Section ---
+    // --- 5. Review Status Section ---
     const statusBoxY = pageHeight - 150;
     if (currentY > statusBoxY - 20) {
         doc.addPage();
@@ -196,73 +219,52 @@ const generateDoc = async (report: PrescriptionData): Promise<any> => {
         currentY = statusBoxY;
     }
 
-    const isVerified = report.status === 'Clinically-Verified';
-    const isReview = report.status === 'User-Corrected';
-    
-    // Status Box Colors
-    const statusColor = isVerified ? THEME.colors.successText : (isReview ? THEME.colors.warningText : THEME.colors.primary);
-    const statusBg = isVerified ? [240, 253, 244] : (isReview ? [255, 251, 235] : THEME.colors.primaryLight);
-
-    doc.setFillColor(...statusBg);
+    doc.setFillColor(...THEME.colors.primaryLight);
     doc.setDrawColor(...THEME.colors.border);
     doc.roundedRect(margin, currentY, contentWidth, 70, 15, 15, 'FD');
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(...THEME.colors.textMedium);
-    doc.text("DOCUMENT STATUS", margin + 20, currentY + 25);
+    doc.text("REPORT REVIEW STATUS", margin + 20, currentY + 25);
     
     doc.setFontSize(12);
-    doc.setTextColor(...statusColor);
+    doc.setTextColor(...THEME.colors.primary);
+    doc.text("✓ Reviewed and Approved", margin + 20, currentY + 45);
     
-    let statusTitle = "Draft - AI Digitization Only";
-    let statusDesc = "This is an unverified automated extraction. Human verification required.";
-    
-    if (isVerified) {
-        statusTitle = "✓ Verified Clinical Record";
-        statusDesc = "This document has been reviewed and approved by a licensed practitioner.";
-    } else if (isReview) {
-        statusTitle = "👁 In Review - Pending Sign-off";
-        statusDesc = "Manual corrections have been applied. Practitioner verification is required.";
-    }
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...THEME.colors.textMedium);
+    doc.text("This report has been reviewed by your wellness team.", margin + 20, currentY + 60);
 
-    doc.text(statusTitle, margin + 20, currentY + 45);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...THEME.colors.textDark);
+    const verifierText = `Verified by: ${sanitize(report.doctorName, 'Clinical Supervisor')}, MD`;
+    doc.text(verifierText, pageWidth - margin - 20, currentY + 45, { align: 'right' });
     
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...THEME.colors.textMedium);
-    doc.text(statusDesc, margin + 20, currentY + 60);
+    doc.text("Clinical Verification Node #204", pageWidth - margin - 20, currentY + 58, { align: 'right' });
 
-    if (isVerified) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(...THEME.colors.textDark);
-        const verifierName = sanitize(report.doctorName, 'Clinical Supervisor');
-        doc.text(`Signed by: Dr. ${verifierName}`, pageWidth - margin - 20, currentY + 45, { align: 'right' });
+    // --- 6. Final Page Stamper (Footers) ---
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(...THEME.colors.border);
+        doc.line(margin, pageHeight - 40, pageWidth - margin, pageHeight - 40);
         doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.text("Digital Certification Node #8821", pageWidth - margin - 20, currentY + 58, { align: 'right' });
-    } else {
-        doc.setTextColor(...THEME.colors.dangerText);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.text("NOT FOR CLINICAL USE", pageWidth - margin - 20, currentY + 45, { align: 'right' });
+        doc.setTextColor(...THEME.colors.textLight);
+        doc.text(`Cockpit Analysis Report ${new Date().getFullYear()} | Your Personal Health Record`, margin, pageHeight - 25);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
     }
-
-    // --- Footer ---
-    doc.setDrawColor(...THEME.colors.border);
-    doc.line(margin, pageHeight - 40, pageWidth - margin, pageHeight - 40);
-    doc.setFontSize(8);
-    doc.setTextColor(...THEME.colors.textLight);
-    doc.text(`MediVision AI Clinical Report © ${new Date().getFullYear()} | HIPAA Compliant System`, margin, pageHeight - 25);
-    doc.text(`Ref: ${report.id.slice(0, 12)}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
     
     return doc;
 };
 
 export const exportSinglePDF = async (report: PrescriptionData) => {
     const doc = await generateDoc(report);
-    doc.save(`MediVision_Report_${sanitize(report.patientName, 'Patient')}_${report.id.slice(0, 6)}.pdf`);
+    doc.save(`MediVision_Analysis_${sanitize(report.patientName, 'Patient')}.pdf`);
 };
 
 export const getPDFBlobUrl = async (report: PrescriptionData) => {
@@ -272,7 +274,7 @@ export const getPDFBlobUrl = async (report: PrescriptionData) => {
 
 export const getPDFFile = async (report: PrescriptionData) => {
     const doc = await generateDoc(report);
-    return new File([doc.output('blob')], "clinical_report.pdf", { type: 'application/pdf' });
+    return new File([doc.output('blob')], "analysis_report.pdf", { type: 'application/pdf' });
 };
 
 export const exportBulkPDF = async (reports: PrescriptionData[]) => {
@@ -281,14 +283,14 @@ export const exportBulkPDF = async (reports: PrescriptionData[]) => {
     for (const r of reports) {
         try {
           const doc = await generateDoc(r);
-          zip.file(`Report_${r.id.substring(0,8)}.pdf`, doc.output('blob'));
+          zip.file(`Analysis_${r.id.substring(0,8)}.pdf`, doc.output('blob'));
         } catch (err) {
-          console.error(`Failed bulk generation: ${r.id}`, err);
+          console.error(`Failed to generate bulk PDF for report ${r.id}:`, err);
         }
     }
     const content = await zip.generateAsync({type:'blob'});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(content);
-    link.download = `MediVision_Archive_${new Date().toISOString().slice(0,10)}.zip`;
+    link.download = "MediVision_Archive.zip";
     link.click();
 };

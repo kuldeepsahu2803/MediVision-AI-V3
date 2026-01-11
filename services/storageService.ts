@@ -20,38 +20,32 @@ export const uploadPrescriptionAssets = async (userId: string, data: Prescriptio
     let imagePath = null;
     let pdfPath = null;
     
-    // Use UUID if available, otherwise use temp ID for filename to prevent collisions
     const safeId = isUUID(data.id) ? data.id : `temp_${Date.now()}`;
 
-    // 1. Upload Image to Supabase Storage
+    // 1. Upload Image
     if (data.imageUrls && data.imageUrls.length > 0) {
-        try {
-            const url = data.imageUrls[0];
-            if (url.startsWith('data:') || url.startsWith('blob:')) {
-                const blob = await dataURLToBlob(url);
-                const fileName = `${userId}/${safeId}_image.png`;
-                
-                const { error: uploadError } = await supabase.storage
-                    .from('prescriptions')
-                    .upload(fileName, blob, {
-                        contentType: 'image/png',
-                        upsert: true
-                    });
+        const url = data.imageUrls[0];
+        if (url.startsWith('data:') || url.startsWith('blob:')) {
+            const blob = await dataURLToBlob(url);
+            const fileName = `${userId}/${safeId}_image.png`;
+            
+            const { error: uploadError } = await supabase.storage
+                .from('prescriptions')
+                .upload(fileName, blob, {
+                    contentType: 'image/png',
+                    upsert: true
+                });
 
-                if (uploadError) {
-                    console.error("Supabase Storage Error (Image):", uploadError);
-                } else {
-                    const { data: publicUrlData } = supabase.storage
-                        .from('prescriptions')
-                        .getPublicUrl(fileName);
-                    imagePath = publicUrlData.publicUrl;
-                }
+            if (uploadError) {
+                throw new Error(`Cloud image storage failed: ${uploadError.message}`);
             } else {
-                // Already a remote URL
-                imagePath = url;
+                const { data: publicUrlData } = supabase.storage
+                    .from('prescriptions')
+                    .getPublicUrl(fileName);
+                imagePath = publicUrlData.publicUrl;
             }
-        } catch (e) {
-            console.error("Image upload exception:", e);
+        } else {
+            imagePath = url;
         }
     }
 
@@ -68,15 +62,15 @@ export const uploadPrescriptionAssets = async (userId: string, data: Prescriptio
             });
             
         if (pdfError) {
-            console.error("Supabase Storage Error (PDF):", pdfError);
+            throw new Error(`PDF report storage failed: ${pdfError.message}`);
         } else {
             const { data: pdfUrlData } = supabase.storage
                 .from('reports')
                 .getPublicUrl(pdfName);
             pdfPath = pdfUrlData.publicUrl;
         }
-    } catch (e) {
-        console.error("PDF generation/upload exception:", e);
+    } catch (e: any) {
+        throw new Error(`Clinical document generation failed: ${e.message}`);
     }
 
     return { imagePath, pdfPath };

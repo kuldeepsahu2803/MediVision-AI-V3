@@ -110,9 +110,9 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
           <div className="flex items-center gap-3">
             <button 
                 onClick={onStart}
-                className="hidden sm:flex bg-slate-900 hover:bg-black text-white dark:bg-white dark:text-black px-6 py-2.5 rounded-full text-sm font-black transition-all shadow-lg hover:shadow-xl active:scale-95 items-center gap-2 group"
+                className="hidden sm:flex bg-slate-900 hover:bg-black text-white dark:bg-white dark:text-black px-8 py-2.5 rounded-full text-sm font-black transition-all shadow-lg hover:shadow-xl active:scale-95 items-center gap-2 group"
             >
-              <span>Book a Demo</span>
+              <span>Get Started</span>
               <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
             </button>
             
@@ -148,14 +148,14 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-rose-500">at the Speed of Sight</span>
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-              Turn handwritten scripts into verified data instantly with our AI-powered clinical cockpit. Experience the future of error-free pharmacy workflows with 99.8% accuracy.
+              Turn handwritten scripts into verified data instantly with our AI-powered clinical cockpit. Experience the future of pharmacy workflows with high-fidelity accuracy.
             </p>
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5">
               <button 
                 onClick={onStart}
                 className="bg-cyan-500 text-white px-10 py-5 rounded-full text-lg font-black shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-105 hover:bg-cyan-600 transition-all flex items-center gap-3"
               >
-                Start Pilot Program
+                Enter Clinical Portal
                 <RocketIcon />
               </button>
               <button 
@@ -163,7 +163,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                 className="glass-panel text-slate-800 dark:text-white px-10 py-5 rounded-full text-lg font-black hover:bg-white/80 dark:hover:bg-white/10 transition-all flex items-center gap-3 group"
               >
                 <PlayIcon />
-                Watch Demo
+                Watch Workflow
               </button>
             </div>
             
@@ -228,7 +228,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center mb-1">
                             <h4 className="font-black text-slate-900 dark:text-white truncate">Amoxicillin 500mg</h4>
-                            <span className="text-[10px] font-black text-cyan-500 bg-cyan-50 dark:bg-cyan-900/40 px-2 py-0.5 rounded-md">99.8%</span>
+                            <span className="text-[10px] font-black text-cyan-500 bg-cyan-50 dark:bg-cyan-900/40 px-2 py-0.5 rounded-md">Validated</span>
                           </div>
                           <p className="text-xs font-bold text-slate-500">Sarah Jenkins • Dr. Abraham Lee</p>
                         </div>
@@ -294,12 +294,12 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
           <div className="text-center max-w-3xl mx-auto mb-20">
             <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Clinical-Grade Intelligence</h2>
             <p className="text-lg font-medium text-slate-600 dark:text-slate-400">
-              Advanced features designed for accuracy, speed, and compliance in a high-stakes medical environment.
+              Advanced features designed for accuracy, safety, and compliance in a high-stakes medical environment.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <FeatureCard 
-                title="AI Extraction" desc="99.8% accuracy on handwriting analysis and digitization."
+                title="AI Extraction" desc="Handwriting analysis and digitization powered by advanced vision models."
                 icon={<RocketIcon />} color="text-cyan-500" bg="bg-cyan-50 dark:bg-cyan-900/20" delay={0.1}
             />
             <FeatureCard 
@@ -311,7 +311,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                 icon={<RocketIcon />} color="text-cyan-500" bg="bg-cyan-50 dark:bg-cyan-900/20" delay={0.3}
             />
             <FeatureCard 
-                title="Pharmacy Sync" desc="Seamless API connection to major PMS and EHR platforms."
+                title="Pharmacy Sync" desc="Seamless connection to major PMS and EHR platforms via clinical APIs."
                 icon={<PlayIcon />} color="text-rose-500" bg="bg-rose-50 dark:bg-rose-900/20" delay={0.4}
             />
           </div>
@@ -325,8 +325,8 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                 <div>
                     <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-12 tracking-tight">From Chaos to Clarity</h2>
                     <div className="flex flex-col relative border-l-4 border-slate-200 dark:border-slate-800 ml-4">
-                        <Step number="1" title="Scan & Upload" desc="Pharmacist scans the paper prescription or receives digital fax." color="bg-cyan-400" delay={0.1} />
-                        <Step number="2" title="AI Extraction Engine" desc="Our Vision Model identifies drug name, dosage, and frequency." color="bg-rose-400" delay={0.2} />
+                        <Step number="1" title="Scan & Upload" desc="Digitize paper prescriptions or receive electronic fax directly in the portal." color="bg-cyan-400" delay={0.1} />
+                        <Step number="2" title="AI Extraction Engine" desc="Our Vision Model identifies drug name, dosage, and frequency with precision." color="bg-rose-400" delay={0.2} />
                         <Step number="3" title="Clinical Verification" desc="System flags potential interactions. Pharmacist reviews instantly." color="bg-cyan-400" delay={0.3} />
                         <Step number="4" title="Fulfillment" desc="Data is pushed to the PMS for automatic labeling and dispensing." color="bg-slate-800" delay={0.4} />
                     </div>
@@ -358,7 +358,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                                 <p>{"{"}</p>
                                 <p className="pl-4">"drug": "Amoxicillin",</p>
                                 <p className="pl-4">"dosage": "500mg",</p>
-                                <p className="pl-4">"conf": 0.998</p>
+                                <p className="pl-4">"status": "Validated"</p>
                                 <p>{"}"}</p>
                             </div>
                         </div>
@@ -380,16 +380,16 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/80 to-transparent"></div>
             <div className="relative z-10 max-w-2xl">
                 <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight">Built for the future of healthcare.</h2>
-                <p className="text-xl font-medium text-slate-300 mb-12 leading-relaxed">Join the pharmacies reducing error rates by 85% and saving 3 hours per pharmacist daily.</p>
+                <p className="text-xl font-medium text-slate-300 mb-12 leading-relaxed">Join thousands of clinical users reducing error rates and reclaiming hours of administrative time every day.</p>
                 <div className="flex flex-col sm:flex-row gap-6">
                     <button 
                         onClick={onStart}
                         className="bg-cyan-500 text-white px-10 py-5 rounded-full text-lg font-black shadow-2xl shadow-cyan-500/50 hover:scale-105 transition-all"
                     >
-                        Get Started Now
+                        Launch Application
                     </button>
-                    <button onClick={handleComingSoon} className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-5 rounded-full text-lg font-black hover:bg-white/20 transition-all">
-                        View Case Studies
+                    <button onClick={() => scrollToSection('platform')} className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-5 rounded-full text-lg font-black hover:bg-white/20 transition-all">
+                        Explore Platform
                     </button>
                 </div>
             </div>
@@ -405,7 +405,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                  <BrandLogo variant="header" />
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-10 max-w-sm leading-relaxed">
-                Empowering pharmacists with clinical-grade artificial intelligence. Ensuring accuracy, safety, and speed in every patient interaction.
+                Empowering clinical staff with pharmaceutical-grade artificial intelligence. Ensuring accuracy, safety, and speed in every medical interaction.
               </p>
               <div className="flex gap-6">
                  {[1,2,3].map(i => <div key={i} onClick={handleComingSoon} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-400 hover:text-cyan-500 cursor-pointer transition-colors border border-slate-200 dark:border-slate-800" />)}
@@ -427,13 +427,13 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                <div className="flex flex-col gap-4">
                     <button onClick={handleComingSoon} className="text-left text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors">Privacy Policy</button>
                     <button onClick={handleComingSoon} className="text-left text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors">Terms of Service</button>
-                    <button onClick={handleComingSoon} className="text-left text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors">HIPAA BAA</button>
+                    <button onClick={handleComingSoon} className="text-left text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors">HIPAA Compliance</button>
                </div>
             </div>
           </div>
           
           <div className="border-t border-slate-200 dark:border-slate-800 pt-12 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">© {new Date().getFullYear()} MediVision AI Inc. All rights reserved.</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">© {new Date().getFullYear()} MediVision AI. All rights reserved.</p>
             <div className="flex items-center gap-8">
                 <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
                     <div className="w-5 h-5 bg-slate-800 dark:bg-white rounded" />
@@ -441,7 +441,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                 </div>
                 <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
                     <div className="w-5 h-5 bg-slate-800 dark:bg-white rounded" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">HIPAA Compliant</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">HIPAA Ready</span>
                 </div>
             </div>
           </div>

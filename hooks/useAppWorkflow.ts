@@ -3,8 +3,8 @@ import { PrescriptionData, AuditEntry } from '../types.ts';
 import { getTreatmentSuggestions } from '../services/geminiService.ts';
 import { generateAuditTrail } from '../lib/auditUtils.ts';
 import { AppTab, TransitionMode } from '../constants/navigation.ts';
+import { ToastType } from '../App.tsx';
 
-// Defined types to avoid circular dependencies or undefined types
 type UserRole = 'guest' | 'professional' | null;
 
 interface UseAppWorkflowProps {
@@ -13,7 +13,7 @@ interface UseAppWorkflowProps {
     analysisEngine: any;
     medicalHistory: any;
     triggerHaptic: (type: string) => void;
-    showToast: (message: string, type: 'success' | 'error' | 'info') => void;
+    showToast: (message: string, type: ToastType) => void;
     setShowLoginModal: (show: boolean) => void;
     navigateToTab: (tab: AppTab, mode: TransitionMode) => void;
 }
@@ -37,6 +37,7 @@ export const useAppWorkflow = ({
         try {
             await analyze();
             triggerHaptic('success');
+            showToast('Analysis complete. Ready for clinical review.', 'success');
         } catch (e: any) {
             triggerHaptic('error');
             showToast(e.message, "error");
@@ -50,14 +51,9 @@ export const useAppWorkflow = ({
         if (userRole === 'guest') {
             setPrescriptionData(updatedData);
             triggerHaptic('success');
-            showToast('Changes applied (Temporary Session).', 'info');
-            
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    navigateToTab(AppTab.TREATMENTS, TransitionMode.DRILL);
-                    resolve();
-                }, 500);
-            });
+            showToast('Changes applied to temporary session.', 'info');
+            navigateToTab(AppTab.TREATMENTS, TransitionMode.DRILL);
+            return;
         }
     
         if (!user) {
@@ -79,42 +75,43 @@ export const useAppWorkflow = ({
                 const suggestions = await getTreatmentSuggestions(dataToSave);
                 dataToSave.aiSuggestions = suggestions;
             } catch (e) {
-                console.error("Could not fetch AI suggestions, saving without them.", e);
-                showToast("Warning: Could not fetch AI suggestions.", "error");
-                triggerHaptic('warning');
+                console.error("Could not fetch AI suggestions.", e);
+                showToast("Warning: AI clinical suggestions unavailable.", "warning");
             }
         }
       
-        setPrescriptionData(dataToSave);
-        saveToHistory(dataToSave);
-      
-        triggerHaptic('success');
-        showToast('Report saved successfully!', 'success');
-        
-        return new Promise(resolve => {
-            setTimeout(() => {
-                navigateToTab(AppTab.TREATMENTS, TransitionMode.DRILL);
-                resolve();
-            }, 1500);
-        });
+        try {
+            showToast('Synchronizing clinical record...', 'info');
+            setPrescriptionData(dataToSave);
+            await saveToHistory(dataToSave);
+            
+            triggerHaptic('success');
+            showToast('Record archived successfully.', 'success');
+            navigateToTab(AppTab.TREATMENTS, TransitionMode.DRILL);
+        } catch (e: any) {
+            console.error("Save failure:", e);
+            triggerHaptic('error');
+            showToast(`Critical Sync Error: ${e.message}`, 'critical');
+        }
     };
     
     const handleVerify = async (verifiedData: PrescriptionData): Promise<void> => {
         if (userRole === 'guest') {
             setPrescriptionData({ ...verifiedData, status: 'Clinically-Verified' });
             triggerHaptic('success');
-            showToast('Verified locally (Temporary).', 'success');
+            showToast('Verified locally (Not Archived).', 'success');
             navigateToTab(AppTab.TREATMENTS, TransitionMode.DRILL);
             return;
         }
     
         if (!verifiedData.id || !user) {
             triggerHaptic('error');
-            showToast('User or prescription ID is missing.', 'error');
-            throw new Error("User or prescription ID is missing.");
+            showToast('Session expired or record ID missing.', 'error');
+            return;
         }
         
         try {
+            showToast('Finalizing clinical verification...', 'info');
             const dataToSave: PrescriptionData = { 
                 ...verifiedData, 
                 status: 'Clinically-Verified' 
@@ -130,29 +127,22 @@ export const useAppWorkflow = ({
             dataToSave.auditTrail = [...(dataToSave.auditTrail || []), finalAudit];
     
             setPrescriptionData(dataToSave);
-            saveToHistory(dataToSave);
+            await saveToHistory(dataToSave);
             
             triggerHaptic('success');
-            showToast('✅ Prescription clinically verified and locked successfully.', 'success');
-    
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    navigateToTab(AppTab.TREATMENTS, TransitionMode.DRILL);
-                    resolve();
-                }, 1500);
-            });
-        } catch (e) {
-            console.error("Failed to verify and lock prescription:", e);
+            showToast('Prescription clinically verified and locked.', 'success');
+            navigateToTab(AppTab.TREATMENTS, TransitionMode.DRILL);
+        } catch (e: any) {
+            console.error("Verification sync failure:", e);
             triggerHaptic('error');
-            showToast('❌ Failed to lock prescription. Please try again.', 'error');
-            throw e;
+            showToast(`Failed to lock record: ${e.message}`, 'critical');
         }
     };
 
     const handleDeleteReport = (id: string) => {
         triggerHaptic('heavy');
         deleteFromHistory(id);
-        showToast("Report deleted.", "info");
+        showToast("Record purged from history.", "info");
     };
 
     return {

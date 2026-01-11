@@ -12,7 +12,7 @@ interface SettingsViewProps {
     onBack?: () => void;
 }
 
-type SettingsTab = 'profile' | 'security' | 'notifications' | 'billing';
+type SettingsTab = 'profile' | 'security' | 'notifications';
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
     const { triggerHaptic } = useHaptic();
@@ -93,7 +93,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
                 <TabButton id="profile" label="Profile" icon="person" />
                 <TabButton id="security" label="Security" icon="lock" />
                 <TabButton id="notifications" label="Notifications" icon="notifications" />
-                <TabButton id="billing" label="Billing" icon="credit_card" />
             </div>
 
             <AnimatePresence mode="wait">

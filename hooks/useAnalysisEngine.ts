@@ -1,17 +1,7 @@
-
 import { useState, useCallback } from 'react';
 import { PrescriptionData } from '../types.ts';
 import { analyzePrescription } from '../services/geminiService.ts';
 import { preprocessImageForOCR } from '../lib/imageProcessing.ts';
-
-interface AnalysisEngineState {
-    imageFiles: File[];
-    imageUrls: string[];
-    prescriptionData: PrescriptionData | null;
-    isLoading: boolean;
-    error: string | null;
-    qualityWarning: string | null;
-}
 
 export const useAnalysisEngine = (isLoggedIn: boolean) => {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -19,12 +9,10 @@ export const useAnalysisEngine = (isLoggedIn: boolean) => {
   const [prescriptionData, setPrescriptionData] = useState<PrescriptionData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  // qualityWarning state removed
 
   const addImages = useCallback((newFiles: File[]) => {
     const allFiles = [...imageFiles, ...newFiles];
     setImageFiles(allFiles);
-    // Reset data on new upload to force re-analysis or clear old state
     setPrescriptionData(null);
     setError(null);
     
@@ -56,8 +44,6 @@ export const useAnalysisEngine = (isLoggedIn: boolean) => {
   }, []);
 
   const analyze = useCallback(async () => {
-    // AUTH CHECK REMOVED: Guests can analyze, they just save locally.
-    
     if (imageFiles.length === 0) {
       setError("Please select at least one image.");
       return;
@@ -67,36 +53,40 @@ export const useAnalysisEngine = (isLoggedIn: boolean) => {
     setError(null);
     setPrescriptionData(null);
 
-    // 2. Preprocessing & API Call
+    // Yield to the main thread to allow the loading spinner to render
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     try {
-      // Preprocess images (Grayscale + Thresholding) for better OCR
+      // 1. Efficient Preprocessing
       const processedImagesPromises = imageFiles.map(file => preprocessImageForOCR(file));
       const processedBase64s = await Promise.all(processedImagesPromises);
 
-      const imagesPayload = processedBase64s.map((base64Url) => {
-        // preprocessImageForOCR returns a data URL (data:image/jpeg;base64,...)
+      const imagesPayload = processedBase64s.map((base64Url, index) => {
         const base64Data = base64Url.split(',')[1];
-        return { base64Data, mimeType: 'image/jpeg' };
+        // Use the original file's mime type (important for application/pdf)
+        return { base64Data, mimeType: imageFiles[index].type || 'image/jpeg' };
       });
       
+      // 2. Call Gemini
       const result = await analyzePrescription(imagesPayload);
       
       const dataWithId: PrescriptionData = { 
         ...result, 
         id: `rx-${Date.now()}`, 
         status: 'AI-Extracted' as const,
-        imageQuality: 'Good', // Default to good
+        imageQuality: 'Good',
         imageQualityMessage: null,
-        imageUrls: imageUrls // Keep original URLs for display
+        imageUrls: imageUrls
       };
       setPrescriptionData(dataWithId);
     } catch (err: unknown) {
+      console.error("Analysis Pipeline Error:", err);
       if (err instanceof Error) setError(`Analysis failed: ${err.message}`);
       else setError("An unknown error occurred during analysis.");
     } finally {
       setIsLoading(false);
     }
-  }, [imageFiles, imageUrls]); // Removed isLoggedIn dependency
+  }, [imageFiles, imageUrls]);
 
   return {
     imageFiles,
@@ -105,7 +95,7 @@ export const useAnalysisEngine = (isLoggedIn: boolean) => {
     setPrescriptionData,
     isLoading,
     error,
-    qualityWarning: null, // Always null now
+    qualityWarning: null,
     addImages,
     removeImage,
     clear,

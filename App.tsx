@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AnalyzeView } from './components/AnalyzeView.tsx';
 import { ReviewView } from './components/ReviewView.tsx';
 import { ReportsView } from './components/ReportsView.tsx';
@@ -24,7 +24,8 @@ import { useAppWorkflow } from './hooks/useAppWorkflow.ts';
 import { useNavigationState } from './hooks/useNavigationState.ts';
 import { AppView, AppTab, TransitionMode } from './constants/navigation.ts';
 
-type ToastState = { message: string; type: 'success' | 'error' | 'info' };
+export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'critical';
+export type ToastItem = { id: string; message: string; type: ToastType };
 type UserRole = 'guest' | 'professional' | null;
 
 const m = motion as any;
@@ -63,12 +64,11 @@ const App: React.FC = () => {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [showTreatments, setShowTreatments] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Fix: Removed 'login' property which is not provided by useAuthSession
-  const { user, isLoggedIn, logout } = useAuthSession();
+  const { user, isLoggedIn, login, logout } = useAuthSession();
   const medicalHistory = useMedicalHistory();
   const analysisEngine = useAnalysisEngine(isLoggedIn);
   const { triggerHaptic } = useHaptic();
@@ -76,9 +76,14 @@ const App: React.FC = () => {
   const { history, isLoadingHistory } = medicalHistory;
   const { imageFiles, imageUrls, prescriptionData, setPrescriptionData, isLoading, error, addImages, removeImage, clear, analyze } = analysisEngine;
 
-  const showToast = (message: string, type: ToastState['type'] = 'info') => {
-    setToast({ message, type });
-  };
+  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   const { handleAnalyzeClick, handleSaveReview, handleVerify, handleDeleteReport } = useAppWorkflow({
       userRole,
@@ -104,7 +109,7 @@ const App: React.FC = () => {
     logout();
     setIsMenuOpen(false);
     triggerHaptic('medium');
-    showToast('You have been logged out.');
+    showToast('You have been logged out.', 'info');
     navigateToView(AppView.LANDING);
     setUserRole(null);
   };
@@ -175,7 +180,13 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-light-bg dark:bg-dark-bg text-slate-900 dark:text-slate-100 transition-colors duration-300 relative overflow-x-hidden">
-      <AnimatePresence>{toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} key="toast-notification" />}</AnimatePresence>
+      <div className="fixed top-6 left-0 right-0 z-[1000] flex flex-col items-center gap-3 pointer-events-none px-4">
+          <AnimatePresence>
+              {toasts.map(t => (
+                  <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />
+              ))}
+          </AnimatePresence>
+      </div>
       <AnimatePresence>{showLoginModal && <LoginModal onLogin={handleLoginSuccess} onClose={() => setShowLoginModal(false)} />}</AnimatePresence>
       <AnimatePresence>{showOnboarding && <OnboardingOverlay onClose={() => setShowOnboarding(false)} />}</AnimatePresence>
       <AnimatePresence mode="wait">

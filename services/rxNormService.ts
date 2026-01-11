@@ -1,4 +1,3 @@
-
 import { RxNormCandidate } from '../types.ts';
 
 const RXNORM_BASE_URL = 'https://rxnav.nlm.nih.gov/REST';
@@ -83,7 +82,6 @@ export const getDrugInteractions = async (rxcuis: string[]): Promise<any[]> => {
       return [];
     }
 
-    // Fix: Read as text first to handle "Not found" plain text responses
     const responseText = await response.text();
     if (!responseText || responseText.trim() === 'Not found') {
       return [];
@@ -98,8 +96,6 @@ export const getDrugInteractions = async (rxcuis: string[]): Promise<any[]> => {
     }
 
     const interactions: any[] = [];
-    
-    // Parse complex RxNav interaction structure
     const fullGroups = data.fullInteractionTypeGroup || [];
     fullGroups.forEach((group: any) => {
       const types = group.fullInteractionType || [];
@@ -180,26 +176,32 @@ const resolveRxCuiName = async (rxcui: string): Promise<string> => {
   }
 };
 
+/**
+ * SAFETY-CRITICAL: Validates strength using decimal-aware parsing.
+ * FAIL-CLOSED: Returns false on API error to force human review.
+ */
 export const validateStrengthForDrug = async (rxcui: string, strength: string): Promise<boolean> => {
-  if (!strength) return true;
-  const numericMatch = strength.match(/(\d+)/);
+  if (!strength || strength.toLowerCase() === 'n/a') return true;
+
+  // Decimal-aware regex (\d*\.?\d+) handles .5mg, 0.5mg, 500mg
+  const numericMatch = strength.match(/(\d*\.?\d+)/);
   if (!numericMatch) return true;
   const targetStrength = numericMatch[1];
 
   try {
     const url = `${RXNORM_BASE_URL}/rxcui/${rxcui}/allrelated.json`;
-    const response = await fetchWithRetry(url);
+    const response = await fetchWithRetry(url, 2);
     
-    if (!response.ok) return true; 
+    if (!response.ok) return false; // FAIL CLOSED
 
     const responseText = await response.text();
-    if (!responseText || responseText.trim() === 'Not found') return true;
+    if (!responseText || responseText.trim() === 'Not found') return false; // FAIL CLOSED
 
     let data;
     try {
       data = JSON.parse(responseText);
     } catch {
-      return true;
+      return false; // FAIL CLOSED
     }
 
     const conceptGroups = data.allRelatedGroup?.conceptGroup || [];
@@ -208,13 +210,15 @@ export const validateStrengthForDrug = async (rxcui: string, strength: string): 
       if (['SCD', 'SCDF'].includes(group.tty)) {
         if (group.conceptProperties) {
           for (const prop of group.conceptProperties) {
+             // Precise numeric matching within the RxNorm name string
              if (prop.name.includes(targetStrength)) return true;
           }
         }
       }
     }
-    return false;
+    return false; // Valid drug, but strength doesn't exist in RxNorm
   } catch (e) {
-    return true; // Fail open
+    console.error("Strength validation service failure:", e);
+    return false; // FAIL CLOSED
   }
 };

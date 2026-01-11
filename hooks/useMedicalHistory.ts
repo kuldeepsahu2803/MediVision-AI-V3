@@ -1,50 +1,100 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PrescriptionData } from '../types.ts';
 import { useAuthSession } from './useAuthSession.ts';
 import * as dbService from '../services/databaseService.ts';
+import { syncLocalToCloud } from '../services/syncService.ts';
 
 export const useMedicalHistory = () => {
   const [history, setHistory] = useState<PrescriptionData[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { isLoggedIn, user } = useAuthSession();
+  const hasSyncedRef = useRef(false);
 
+  // Load Data (Guest or User)
   useEffect(() => {
     let mounted = true;
 
     const loadData = async () => {
       setIsLoadingHistory(true);
       try {
-        // SECURE: Removed auto-sync on login. Users must explicitly import legacy data.
+        // 1. If Just Logged In -> Sync
+        if (isLoggedIn && !hasSyncedRef.current) {
+            await syncLocalToCloud();
+            hasSyncedRef.current = true;
+        }
+
+        // 2. Load (will fetch from Supabase if logged in, Local if not)
+        if (isLoggedIn && user) {
+            console.log(`Fetching history for user: ${user.id}`);
+        }
+        
         const dbData = await dbService.getAllPrescriptions();
-        if (mounted) setHistory(dbData);
+        
+        if (mounted) {
+            setHistory(dbData);
+        }
       } catch (e) {
-        console.error("Failed to load clinical history:", e);
+        console.error("Failed to load medical history:", e);
       } finally {
-        if (mounted) setIsLoadingHistory(false);
+        if (mounted) {
+            setIsLoadingHistory(false);
+        }
       }
     };
 
     loadData();
+    
     return () => { mounted = false; };
   }, [isLoggedIn, user]);
 
   const saveToHistory = async (dataToSave: PrescriptionData) => {
-    const dataWithTimestamp = { ...dataToSave, timestamp: dataToSave.timestamp || new Date().toISOString() };
-    setHistory(prev => {
-        const idx = prev.findIndex(h => h.id === dataWithTimestamp.id);
-        return idx > -1 ? prev.map((h, i) => i === idx ? dataWithTimestamp : h) : [dataWithTimestamp, ...prev];
+    // Add timestamp for correct sorting and display
+    const dataWithTimestamp = {
+        ...dataToSave,
+        timestamp: dataToSave.timestamp || new Date().toISOString()
+    };
+
+    // 1. Optimistic Update (Immediate UI feedback)
+    setHistory(prevHistory => {
+        const existingIndex = prevHistory.findIndex(h => h.id === dataWithTimestamp.id);
+        if (existingIndex > -1) {
+            const newHistory = [...prevHistory];
+            newHistory[existingIndex] = dataWithTimestamp;
+            return newHistory;
+        } else {
+            return [dataWithTimestamp, ...prevHistory];
+        }
     });
+
+    // 2. Persist to DB (Auto-routes to Local or Cloud based on Auth)
     try {
         await dbService.savePrescription(dataWithTimestamp);
-        const fresh = await dbService.getAllPrescriptions();
-        setHistory(fresh);
-    } catch (e) { console.error("Persistence failed:", e); }
+        
+        // Reload to get true IDs (especially if Postgres generated UUIDs)
+        const freshData = await dbService.getAllPrescriptions();
+        setHistory(freshData);
+    } catch (e) {
+        console.error("Failed to save record to DB:", e);
+        // Optional: Revert optimistic update here if critical
+    }
   };
 
-  const deleteFromHistory = async (id: string) => {
-    setHistory(prev => prev.filter(h => h.id !== id));
-    try { await dbService.deletePrescription(id); } catch (e) { console.error("Delete failed:", e); }
+  const deleteFromHistory = async (idToDelete: string) => {
+    if (!idToDelete) return;
+
+    // 1. Optimistic Update
+    setHistory(prevHistory => prevHistory.filter(h => h.id !== idToDelete));
+
+    // 2. Persist to DB
+    try {
+        await dbService.deletePrescription(idToDelete);
+    } catch (e) {
+        console.error("Failed to delete record from DB:", e);
+        // Optional: Fetch data again to revert if delete failed
+        const freshData = await dbService.getAllPrescriptions();
+        setHistory(freshData);
+    }
   };
 
   return { history, saveToHistory, deleteFromHistory, isLoadingHistory };

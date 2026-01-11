@@ -1,12 +1,18 @@
-
 /**
  * Converts an image file to a pre-processed Base64 string optimized for OCR.
- * Steps:
- * 1. Resize to max dimension (limiting token usage/bandwidth)
- * 2. Grayscale conversion
- * 3. Simple contrast stretching / binarization
+ * Optimized to use hardware-accelerated canvas filters instead of pixel-by-pixel JS loops.
+ * Added support for PDF files which should bypass canvas processing.
  */
 export const preprocessImageForOCR = async (file: File): Promise<string> => {
+  if (file.type === 'application/pdf') {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -14,14 +20,14 @@ export const preprocessImageForOCR = async (file: File): Promise<string> => {
     img.onload = () => {
       URL.revokeObjectURL(url);
       const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: false });
       if (!ctx) {
         reject(new Error("Could not get canvas context"));
         return;
       }
 
-      // 1. Resize logic (Cap max dimension to 2048px to save bandwidth/tokens while maintaining legibility)
-      const MAX_DIMENSION = 2048;
+      // 1. Resize logic (Cap max dimension to 1600px for better performance/token balance)
+      const MAX_DIMENSION = 1600;
       let width = img.width;
       let height = img.height;
 
@@ -40,42 +46,12 @@ export const preprocessImageForOCR = async (file: File): Promise<string> => {
       canvas.width = width;
       canvas.height = height;
       
-      // Draw resized image
+      // 2. Use hardware-accelerated filters instead of manual loops
+      ctx.filter = 'grayscale(1) contrast(1.2) brightness(1.1)';
       ctx.drawImage(img, 0, 0, width, height);
 
-      // 2. Access pixel data
-      const imageData = ctx.getImageData(0, 0, width, height);
-      const data = imageData.data;
-
-      // 3. Grayscale & Contrast Enhancement
-      // We iterate through every pixel
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-
-        // Standard Luminance: 0.299R + 0.587G + 0.114B
-        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-
-        // Adaptive Thresholding / Binarization simulation
-        // Simple approach: Increase contrast by pushing darks darker and lights lighter
-        // This helps remove faint shadows or paper texture
-        if (gray > 160) {
-            gray = 255; // Make background pure white
-        } else if (gray < 80) {
-            gray = 0;   // Make text pure black
-        }
-
-        data[i] = gray;     // Red
-        data[i + 1] = gray; // Green
-        data[i + 2] = gray; // Blue
-        // Alpha (data[i+3]) remains unchanged
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-
       // Return as Base64 JPEG
-      const base64 = canvas.toDataURL('image/jpeg', 0.9);
+      const base64 = canvas.toDataURL('image/jpeg', 0.85);
       resolve(base64);
     };
 

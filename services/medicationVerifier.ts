@@ -1,4 +1,3 @@
-
 import { Medicine, VerificationResult } from '../types.ts';
 import { normalizeMedicationName } from '../lib/normalization.ts';
 import { searchRxNormCandidates, validateStrengthForDrug } from './rxNormService.ts';
@@ -7,8 +6,8 @@ import { logMetric } from '../lib/metrics.ts';
 import { reReadHandwriting } from './geminiService.ts';
 
 /**
- * The Brain of the Verification System.
- * Determines if a drug is Green, Yellow, or Red.
+ * The Brain of the Clinical Safety System.
+ * Determines if a drug is AI Guess, Tentative, or Database Match.
  */
 export const verifyMedication = async (med: Medicine, imageBase64?: string): Promise<VerificationResult> => {
   const startTime = performance.now();
@@ -27,7 +26,7 @@ export const verifyMedication = async (med: Medicine, imageBase64?: string): Pro
   logMetric('cache_miss', { medName: med.name });
 
   let result: VerificationResult = {
-    status: 'unverified',
+    status: 'ai_transcription',
     color: 'gray',
     normalizedName,
     confidenceScore: 0,
@@ -40,7 +39,7 @@ export const verifyMedication = async (med: Medicine, imageBase64?: string): Pro
     // 2. Initial RxNorm Search
     let candidates = await searchRxNormCandidates(normalizedName);
 
-    // Phase 2: Multi-Pass Fallback Matching
+    // Multi-Pass Fallback Matching
     if ((candidates.length === 0 || candidates[0].score < 75) && normalizedName.length > 3) {
       const relaxedName = normalizeMedicationName(currentName, 'relaxed');
       if (relaxedName !== normalizedName) {
@@ -49,70 +48,77 @@ export const verifyMedication = async (med: Medicine, imageBase64?: string): Pro
         if (fallbackCandidates.length > 0 && (candidates.length === 0 || fallbackCandidates[0].score > candidates[0].score)) {
           candidates = fallbackCandidates;
           normalizedName = relaxedName;
-          result.issues.push("Applied clinical noise filtering for matching.");
+          result.issues.push("Clinical noise filtering applied.");
         }
       }
     }
 
-    // Phase 4: Coordinate-Aware Re-Reading (If still uncertain)
-    if ((candidates.length === 0 || candidates[0].score < 50) && imageBase64 && med.coordinates) {
+    // Coordinate-Aware Re-Reading (If still uncertain)
+    if ((candidates.length === 0 || candidates[0].score < 70) && imageBase64 && med.coordinates) {
       logMetric('re_read_trigger', { medName: currentName });
       const refinedName = await reReadHandwriting(imageBase64, med.coordinates);
-      if (refinedName && refinedName !== "N/A" && refinedName !== currentName) {
+      if (refinedName && refinedName !== "Illegible / Confidence Too Low" && refinedName !== currentName) {
         const refinedNormalized = normalizeMedicationName(refinedName, 'strict');
         const refinedCandidates = await searchRxNormCandidates(refinedNormalized);
         if (refinedCandidates.length > 0 && (candidates.length === 0 || refinedCandidates[0].score > candidates[0].score)) {
           candidates = refinedCandidates;
           normalizedName = refinedNormalized;
           currentName = refinedName;
-          result.issues.push("Re-read handwriting for improved clarity.");
+          result.issues.push("AI Refinement pass performed.");
         }
+      } else if (refinedName === "Illegible / Confidence Too Low") {
+          result.status = 'low_confidence';
+          result.color = 'rose';
+          result.issues.push("Ink detected but transcription is ambiguous.");
       }
     }
 
     result.candidates = candidates;
 
     if (candidates.length === 0) {
-        result.status = 'unverified';
-        result.color = 'yellow';
-        result.issues.push("Drug not found in RxNorm database.");
+        if (result.status !== 'low_confidence') {
+            result.status = 'ai_transcription';
+            result.color = 'gray';
+            result.issues.push("Drug not found in RxNorm database.");
+        }
     } else {
         const topCandidate = candidates[0];
         result.rxcui = topCandidate.rxcui;
         result.standardName = topCandidate.name;
         result.confidenceScore = topCandidate.score;
 
-        if (topCandidate.score >= 75) {
-            result.status = 'verified';
-            result.color = 'green';
+        // SAFE CONFIDENCE GATING (95/70 Rule)
+        if (topCandidate.score >= 95) {
+            result.status = 'database_match';
+            result.color = 'cyan';
             
-            // Phase 1: Validating against canonical units
+            // Fail-closed strength check
             if (med.dosage && med.dosage !== 'N/A') {
                 const isStrengthValid = await validateStrengthForDrug(topCandidate.rxcui, med.dosage);
                 if (!isStrengthValid) {
                     result.status = 'invalid_strength';
-                    result.color = 'red';
-                    result.issues.push(`Strength '${med.dosage}' not found for ${topCandidate.name}`);
-                    logMetric('strength_validation_fail', { medName: currentName, rxcui: topCandidate.rxcui, dosage: med.dosage });
+                    result.color = 'rose';
+                    result.issues.push(`Strength verification failed against RxNorm SCDF.`);
                 }
             }
+        } else if (topCandidate.score >= 70) {
+            result.status = 'tentative_match';
+            result.color = 'amber';
+            result.issues.push("Spelling variant detected. Verify against original ink.");
         } else {
-            result.status = 'partial_match';
-            result.color = 'yellow';
-            result.issues.push("Low confidence match. Please verify spelling.");
+            result.status = 'low_confidence';
+            result.color = 'rose';
+            result.issues.push("Match confidence below clinical threshold.");
         }
     }
 
-    // 5. Cache Result
+    // 5. Cache Result (only if not an error path)
     await cacheVerification(normalizedName, result);
     
-    const latency = performance.now() - startTime;
     logMetric('verification_complete', { 
         medName: currentName, 
         status: result.status, 
-        color: result.color,
-        score: result.confidenceScore,
-        latency 
+        score: result.confidenceScore
     });
     
     return result;
@@ -164,11 +170,11 @@ export const verifyPrescriptionMeds = async (medications: Medicine[], imageBase6
         const verification = await verifyMedication(med, imageBase64);
         return {
             ...med,
-            verification
+            verification,
+            humanConfirmed: false // Always reset on new verification pass
         };
     });
 
-    // Limit to 5 concurrent requests to be safe
     const results = await limitConcurrency(tasks, 5);
     return results;
 };

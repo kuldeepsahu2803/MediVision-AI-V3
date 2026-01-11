@@ -1,4 +1,3 @@
-
 export interface FdaVerification {
   verified: boolean;
   standardName?: string;
@@ -12,8 +11,8 @@ export interface FdaVerification {
 
 // --- New RxNorm Verification Types ---
 
-export type VerificationColor = 'green' | 'yellow' | 'red' | 'gray';
-export type VerificationStatus = 'verified' | 'partial_match' | 'invalid_strength' | 'unverified';
+export type VerificationColor = 'cyan' | 'amber' | 'rose' | 'gray' | 'emerald';
+export type VerificationStatus = 'ai_transcription' | 'tentative_match' | 'database_match' | 'low_confidence' | 'invalid_strength' | 'human_verified';
 
 export interface RxNormCandidate {
   rxcui: string;
@@ -42,10 +41,9 @@ export interface Medicine {
   route?: string;
   rxcui?: string;
   confidence?: number;
-  // Deprecating fdaVerification in favor of strict verification
-  fdaVerification?: FdaVerification;
   verification?: VerificationResult; 
   coordinates?: number[]; 
+  humanConfirmed?: boolean; // Mandatory for safety sign-off
 }
 
 export interface AiSuggestions {

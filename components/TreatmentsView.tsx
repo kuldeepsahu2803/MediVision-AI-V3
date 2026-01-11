@@ -76,8 +76,8 @@ const MedicineRow: React.FC<{
   };
 
   const Icon = getIcon();
-  const statusColor = med.verification?.color === 'green' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' : 
-                      med.verification?.color === 'red' ? 'bg-rose-500/10 text-rose-600 border-rose-200' : 
+  const statusColor = (med.humanConfirmed || med.verification?.color === 'emerald') ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' : 
+                      med.verification?.color === 'rose' ? 'bg-rose-500/10 text-rose-600 border-rose-200' : 
                       'bg-cyan-500/10 text-cyan-600 border-cyan-200';
 
   return (
@@ -360,7 +360,7 @@ export const TreatmentsView: React.FC<{ prescription: PrescriptionData | null }>
               <div className="mt-16 flex flex-wrap gap-4">
                 <div className="px-6 py-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center gap-3 shadow-sm">
                     <span className="size-2.5 rounded-full bg-cyan-500 animate-pulse"></span>
-                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Confidence Score: 94.2%</span>
+                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Confidence Score: High</span>
                 </div>
                 {rxInteractions.length > 0 && (
                    <div className="px-6 py-3 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center gap-3 shadow-sm">
@@ -389,7 +389,7 @@ export const TreatmentsView: React.FC<{ prescription: PrescriptionData | null }>
               <div className="space-y-6 mb-12">
                 <div className="flex justify-between items-center py-4 border-b border-slate-50 dark:border-white/5">
                   <span className="text-sm font-bold text-slate-500">Extraction Precision</span>
-                  <span className="text-sm font-black text-brand-blue">98.2%</span>
+                  <span className="text-sm font-black text-brand-blue">High Confidence</span>
                 </div>
                 <div className="flex justify-between items-center py-4 border-b border-slate-50 dark:border-white/5">
                   <span className="text-sm font-bold text-slate-500">Database Verification</span>
