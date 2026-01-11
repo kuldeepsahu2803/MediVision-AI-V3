@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" class="light scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>MediVision AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              'brand-blue': '#007ACC',
+              'brand-green': '#3DA35D',
+              'brand-navy': '#1A2B48',
+              "primary": "#00BCD4",
+              "primary-dark": "#008ba3",
+              "primary-light": "#e0f7fa",
+              "secondary": "#E91E63",
+              "secondary-dark": "#ad1457",
+              "secondary-light": "#fce4ec",
+
+              // Light Theme
+              'light-bg': '#F9FAFB',
+              'light-panel': 'rgba(255, 255, 255, 0.75)',
+              'light-text': '#1A2B48',
+              'light-text-mid': '#4A5568',
+              'light-text-dark': '#718096',
+              'light-border': 'rgba(0, 0, 0, 0.08)',
+              
+              // Dark Theme
+              'dark-bg': '#000000',
+              'dark-panel': 'rgba(28, 28, 30, 0.65)',
+              'dark-text': '#F3F4F6',
+              'dark-text-mid': '#9CA3AF',
+              'dark-text-dark': '#4B5563',
+              'dark-border': 'rgba(255, 255, 255, 0.12)',
+            },
+            backgroundImage: {
+              'gradient-cta': 'linear-gradient(135deg, #00BCD4 0%, #E91E63 100%)',
+            },
+            animation: {
+              'glow': 'glow 4s linear infinite',
+              'slideInUp': 'slideInUp 0.5s ease-out forwards',
+              'fadeIn': 'fadeIn 0.3s ease-out forwards',
+              'slideInRight': 'slideInRight 0.3s ease-out forwards',
+              'animate-bg': 'animate-bg 25s linear infinite',
+            },
+            boxShadow: {
+              'glow': '0 0 30px rgba(0, 188, 212, 0.4)',
+              'glass': '0 8px 32px 0 rgba(0, 188, 212, 0.1)',
+            },
+            keyframes: {
+              glow: {
+                '0%, 100%': { opacity: 0.7 },
+                '50%': { opacity: 1 },
+              },
+              slideInUp: {
+                'from': { opacity: 0, transform: 'translateY(20px)' },
+                'to': { opacity: 1, transform: 'translateY(0)' },
+              },
+              fadeIn: {
+                'from': { opacity: 0 },
+                'to': { opacity: 1 },
+              },
+              slideInRight: {
+                'from': { transform: 'translateX(100%)' },
+                'to': { transform: 'translateX(0)' },
+              },
+               'animate-bg': {
+                '0%': {
+                    transform: 'translateY(0) rotate(0deg)',
+                    opacity: '1',
+                    borderRadius: '0'
+                },
+                '100%': {
+                    transform: 'translateY(-1000px) rotate(720deg)',
+                    opacity: '0',
+                    borderRadius: '50%'
+                }
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --brand-blue: #007ACC;
+        --brand-green: #3DA35D;
+        --glow-primary: var(--brand-blue);
+        --glow-secondary: var(--brand-green);
+      }
+      body {
+        @apply bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text transition-colors duration-300;
+        overflow-x: hidden;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      .glass-panel {
+        @apply backdrop-blur-2xl bg-light-panel dark:bg-dark-panel border border-light-border dark:border-dark-border shadow-xl text-gray-900 dark:text-gray-100;
+      }
+      
+      input, textarea, select {
+         @apply bg-white/50 dark:bg-black/20 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700;
+      }
+      input::placeholder, textarea::placeholder {
+         @apply text-gray-500 dark:text-gray-400;
+      }
+
+      .mask-linear-fade {
+        mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 50;
+        opacity: 0.03;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+      
+      .background {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 0;
+        z-index: -10;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--glow-primary), transparent 85%), transparent 60%),
+                    radial-gradient(circle at 90% 90%, color-mix(in srgb, var(--glow-secondary), transparent 85%), transparent 60%);
+      }
+
+      .btn-gradient {
+        background-image: linear-gradient(135deg, var(--glow-primary), var(--glow-secondary));
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      .btn-gradient:hover {
+        box-shadow: 0 4px 20px color-mix(in srgb, var(--glow-primary), transparent 60%);
+        transform: scale(1.02);
+      }
+      .btn-secondary {
+        @apply bg-transparent border border-light-border dark:border-dark-border transition-all duration-300 text-light-text dark:text-dark-text;
+      }
+      .btn-secondary:hover {
+        @apply bg-black/5 dark:bg-white/10;
+      }
+
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.25",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "vite": "https://aistudiocdn.com/vite@^7.2.6",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "jspdf": "https://aistudiocdn.com/jspdf@^3.0.4",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "jspdf-autotable": "https://aistudiocdn.com/jspdf-autotable@^5.0.2",
+    "url": "https://aistudiocdn.com/url@^0.11.4",
+    "idb": "https://aistudiocdn.com/idb@^8.0.3",
+    "qrcode": "https://aistudiocdn.com/qrcode@^1.5.4",
+    "jszip": "https://aistudiocdn.com/jszip@^3.10.1",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.87.1",
+    "express": "https://esm.sh/express@^5.2.1",
+    "express-rate-limit": "https://esm.sh/express-rate-limit@^8.2.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <div class="background"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

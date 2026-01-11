@@ -1,0 +1,8 @@
+{
+  "name": "MediVision AI",
+  "description": "An AI-powered platform to scan, analyze, and manage medical prescriptions using advanced image analysis.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "prompt": ""
+}
