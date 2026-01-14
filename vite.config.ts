@@ -15,15 +15,13 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        // Only exposing Supabase keys as they are safe for client-side use with RLS
+        'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
+        'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
       },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
-          // Force single React instance to fix framer-motion Context errors
-          react: path.resolve(__dirname, 'node_modules/react'),
-          'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
         }
       }
     };

@@ -45,8 +45,9 @@ export const useAnalysisEngine = (isLoggedIn: boolean) => {
 
   const analyze = useCallback(async () => {
     if (imageFiles.length === 0) {
-      setError("Please select at least one image.");
-      return;
+      const msg = "Please select at least one image.";
+      setError(msg);
+      throw new Error(msg);
     }
 
     setIsLoading(true);
@@ -63,7 +64,6 @@ export const useAnalysisEngine = (isLoggedIn: boolean) => {
 
       const imagesPayload = processedBase64s.map((base64Url, index) => {
         const base64Data = base64Url.split(',')[1];
-        // Use the original file's mime type (important for application/pdf)
         return { base64Data, mimeType: imageFiles[index].type || 'image/jpeg' };
       });
       
@@ -81,8 +81,10 @@ export const useAnalysisEngine = (isLoggedIn: boolean) => {
       setPrescriptionData(dataWithId);
     } catch (err: unknown) {
       console.error("Analysis Pipeline Error:", err);
-      if (err instanceof Error) setError(`Analysis failed: ${err.message}`);
-      else setError("An unknown error occurred during analysis.");
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during analysis.";
+      setError(errorMessage);
+      // Re-throw so the workflow hook can handle UI feedback properly
+      throw err;
     } finally {
       setIsLoading(false);
     }
