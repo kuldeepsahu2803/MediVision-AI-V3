@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ImageUploader } from './ImageUploader.tsx';
@@ -250,9 +249,11 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
             )}
           </AnimatePresence>
           <div className="flex justify-end mt-4">
-            <m.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} onClick={onAnalyze} disabled={imageFiles.length === 0 || isLoading || !navigator.onLine} className="relative overflow-hidden rounded-full bg-gradient-cta px-14 py-6 text-white shadow-[0_20px_50px_rgba(0,188,212,0.4)] hover:shadow-[0_20px_60px_rgba(0,188,212,0.6)] transition-all group w-full sm:w-auto disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed border border-white/40">
-              <div className="relative z-10 flex items-center justify-center gap-3 font-black text-xl tracking-widest uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{isLoading ? <Spinner className="size-6 text-white" /> : <><span className="material-symbols-outlined text-2xl">auto_fix_high</span>Analyze {imageFiles.length > 0 ? `${imageFiles.length} ` : ''}{imageFiles.length === 1 ? 'Prescription' : 'Files'}</>}</div>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+            <m.button whileTap={{ scale: 0.98 }} onClick={onAnalyze} disabled={imageFiles.length === 0 || isLoading || !navigator.onLine} className="btn-gradient-cta rounded-full px-14 py-6 w-full sm:w-auto disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed border-none outline-none overflow-hidden relative group">
+              <div className="relative z-10 flex items-center justify-center gap-3 font-black text-xl tracking-widest uppercase">
+                {isLoading ? <Spinner className="size-6 text-white" /> : <><span className="material-symbols-outlined text-2xl">auto_fix_high</span>Analyze {imageFiles.length > 0 ? `${imageFiles.length} ` : ''}{imageFiles.length === 1 ? 'Prescription' : 'Files'}</>}
+              </div>
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </m.button>
           </div>
         </div>

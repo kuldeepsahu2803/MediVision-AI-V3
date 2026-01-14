@@ -1,4 +1,3 @@
-
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
@@ -54,8 +53,9 @@ app.post('/api/analyze', async (req, res) => {
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Use gemini-3-flash-preview for general text tasks as per guidelines
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents,
       config
     });

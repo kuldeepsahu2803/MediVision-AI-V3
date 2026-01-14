@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { GoogleIcon } from './icons/GoogleIcon.tsx';
 import BrandLogo from './BrandLogo.tsx';
@@ -114,7 +113,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
                     transition={{ duration: 0.2 }}
                 >
                     <div className="text-center">
-                        <h2 className="text-2xl font-bold text-light-text dark:text-dark-text">Welcome Back</h2>
+                        <h2 className="text-2xl font-black text-light-text dark:text-dark-text tracking-tight">Welcome Back</h2>
                         <p className="text-sm text-light-text-mid dark:text-dark-text-mid mt-1">Please log in to access your dashboard.</p>
                     </div>
                     
@@ -123,31 +122,33 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
                         {error && <p className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded">{error}</p>}
                         
                         <div>
-                            <label className="text-sm font-medium text-light-text-mid dark:text-dark-text-mid">Email</label>
+                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Email</label>
                             <input 
                                 type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-black/5 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-md text-sm"
+                                className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                placeholder="clinician@hospital.com"
                             />
                         </div>
                         <div>
                             <div className="flex justify-between items-center">
-                                <label className="text-sm font-medium text-light-text-mid dark:text-dark-text-mid">Password</label>
-                                <button type="button" onClick={() => setView('forgot')} className="text-xs text-brand-blue hover:underline">Forgot?</button>
+                                <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Password</label>
+                                <button type="button" onClick={() => setView('forgot')} className="text-xs text-primary font-bold hover:underline">Forgot?</button>
                             </div>
                             <input 
                                 type="password" required value={password} onChange={e => setPassword(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-black/5 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-md text-sm"
+                                className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                placeholder="••••••••"
                             />
                         </div>
                         
                         <motion.button whileTap={{ scale: 0.96 }} type="submit" disabled={loading}
-                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-lg shadow-lg text-white disabled:opacity-70">
-                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Login'}
+                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3.5 text-base font-bold rounded-xl shadow-lg disabled:opacity-70 mt-4">
+                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Sign In to Portal'}
                         </motion.button>
 
-                        <div className="text-center text-sm mt-4">
-                            <span className="text-gray-500">Don't have an account? </span>
-                            <button type="button" onClick={() => setView('signup')} className="text-brand-blue font-semibold hover:underline">Sign Up</button>
+                        <div className="text-center text-sm mt-6">
+                            <span className="text-gray-500 font-medium">New to MediVision? </span>
+                            <button type="button" onClick={() => setView('signup')} className="text-primary font-black hover:underline uppercase tracking-widest text-xs ml-1">Create Account</button>
                         </div>
                     </form>
                 </motion.div>
@@ -162,33 +163,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
                     transition={{ duration: 0.2 }}
                 >
                     <div className="text-center">
-                        <h2 className="text-2xl font-bold text-light-text dark:text-dark-text">Create Account</h2>
+                        <h2 className="text-2xl font-black text-light-text dark:text-dark-text tracking-tight">Join MediVision</h2>
+                        <p className="text-sm text-light-text-mid dark:text-dark-text-mid mt-1">Configure your clinical workspace.</p>
                     </div>
                     
                     <form onSubmit={handleSignUp} className="mt-6 space-y-4">
                         {error && <p className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded">{error}</p>}
                         
                         <div>
-                            <label className="text-sm font-medium">Full Name</label>
-                            <input type="text" required value={fullName} onChange={e => setFullName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-black/5 dark:bg-white/5 border rounded-md text-sm" />
+                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Full Name</label>
+                            <input type="text" required value={fullName} onChange={e => setFullName(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Dr. John Doe" />
                         </div>
                         <div>
-                            <label className="text-sm font-medium">Email</label>
-                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-black/5 dark:bg-white/5 border rounded-md text-sm" />
+                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Email</label>
+                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="name@clinic.com" />
                         </div>
                         <div>
-                            <label className="text-sm font-medium">Password</label>
-                            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-black/5 dark:bg-white/5 border rounded-md text-sm" />
+                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Password</label>
+                            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="••••••••" />
                         </div>
                         
                         <motion.button whileTap={{ scale: 0.96 }} type="submit" disabled={loading}
-                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-lg shadow-lg text-white disabled:opacity-70">
-                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Sign Up'}
+                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3.5 text-base font-bold rounded-xl shadow-lg disabled:opacity-70 mt-4">
+                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Create Account'}
                         </motion.button>
 
-                        <div className="text-center text-sm mt-4">
-                            <span className="text-gray-500">Already have an account? </span>
-                            <button type="button" onClick={() => setView('login')} className="text-brand-blue font-semibold hover:underline">Login</button>
+                        <div className="text-center text-sm mt-6">
+                            <span className="text-gray-500 font-medium">Already have an account? </span>
+                            <button type="button" onClick={() => setView('login')} className="text-primary font-black hover:underline uppercase tracking-widest text-xs ml-1">Login</button>
                         </div>
                     </form>
                 </motion.div>
@@ -203,22 +205,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
                     transition={{ duration: 0.2 }}
                 >
                      <div className="text-center">
-                        <h2 className="text-2xl font-bold">Reset Password</h2>
-                        <p className="text-sm text-gray-500 mt-1">We'll email you a link to reset it.</p>
+                        <h2 className="text-2xl font-black text-light-text dark:text-dark-text tracking-tight">Reset Password</h2>
+                        <p className="text-sm text-gray-500 mt-1">We'll email you a recovery link.</p>
                     </div>
 
                     <form onSubmit={handleResetSubmit} className="mt-8 space-y-6">
                          <div>
-                            <label className="text-sm font-medium">Email Address</label>
-                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-black/5 dark:bg-white/5 border rounded-md text-sm" />
+                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Email Address</label>
+                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="clinician@hospital.com" />
                         </div>
                         
                         <motion.button whileTap={{ scale: 0.96 }} type="submit" disabled={loading}
-                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-lg shadow-lg text-white disabled:opacity-70">
+                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3.5 text-base font-bold rounded-xl shadow-lg disabled:opacity-70">
                             {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Send Reset Link'}
                         </motion.button>
                         
-                        <button type="button" onClick={() => setView('login')} className="w-full text-sm text-gray-500 hover:text-gray-800 transition-colors">
+                        <button type="button" onClick={() => setView('login')} className="w-full text-xs font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-colors text-center">
                             Back to Login
                         </button>
                     </form>

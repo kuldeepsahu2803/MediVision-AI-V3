@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import BrandLogo from './BrandLogo.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,7 +26,7 @@ const CheckIcon = () => (
   </svg>
 );
 
-// --- Sub-components ---
+// --- Sub-components (Moved outside to prevent re-creation) ---
 
 const FeatureCard = ({ title, desc, icon, color, bg, delay }: any) => (
   <motion.div 
@@ -120,7 +119,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
             </button>
           </div>
         </nav>
@@ -177,7 +176,6 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
             </div>
           </motion.div>
 
-          {/* Interactive Mockup */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -271,7 +269,6 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
         </div>
       </section>
 
-      {/* Trusted Logos */}
       <div className="w-full border-y border-slate-200/60 dark:border-slate-800/60 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm py-12 overflow-hidden scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center gap-10">
           <p className="text-[10px] font-black text-slate-400 dark:text-slate-600 whitespace-nowrap uppercase tracking-[0.3em]">Institutional Partners</p>
@@ -288,7 +285,6 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
         </div>
       </div>
 
-      {/* Features Grid */}
       <section id="platform" className="py-32 px-4 sm:px-8 relative scroll-mt-24">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-20">
@@ -318,7 +314,6 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
         </div>
       </section>
 
-      {/* Workflow Section */}
       <section id="how-it-works" className="py-32 px-4 sm:px-8 bg-white/40 dark:bg-slate-900/20 border-y border-white/50 dark:border-slate-800/50 backdrop-blur-md scroll-mt-24">
         <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-20 items-center">
@@ -368,7 +363,6 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
         </div>
       </section>
 
-      {/* CTA Banner */}
       <section className="py-32 px-4 sm:px-8">
         <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -396,7 +390,6 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
         </motion.div>
       </section>
 
-      {/* Branded Footer */}
       <footer id="footer" className="bg-white/80 dark:bg-slate-950 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pt-24 pb-12 px-4 sm:px-8 mt-auto">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-16 mb-20">

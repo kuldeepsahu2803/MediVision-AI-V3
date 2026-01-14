@@ -31,18 +31,13 @@ const AlertShield = (props: any) => (
   </svg>
 );
 
-interface ReviewViewProps {
-  prescription: PrescriptionData | null;
-  imageUrls: string[] | null;
-  onSave: (data: PrescriptionData) => Promise<void>;
-  onVerify: (data: PrescriptionData) => Promise<void>;
-}
-
 const EyeSlashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
     </svg>
 );
+
+// --- Sub-components (Moved outside to prevent re-creation) ---
 
 const AuditTrailModal: React.FC<{ trail: AuditEntry[], onClose: () => void }> = ({ trail, onClose }) => {
     return (
@@ -110,7 +105,6 @@ const VerificationStatusBadge: React.FC<{
     if (isReverifying) return <div className="p-1"><Spinner className="w-3.5 h-3.5" /></div>;
     if (!result) return null;
 
-    // Safety First: Green is strictly reserved for human sign-off
     if (humanConfirmed) {
         return (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm">
@@ -161,10 +155,6 @@ const EditableField: React.FC<{
     onBlur?: () => void;
     placeholder?: string;
 }> = ({ label, value, onChange, multiline, disabled, rightElement, onFocus, onBlur, placeholder }) => {
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        onChange(e.target.value);
-    };
-
     return (
         <div className="mb-3">
             <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between items-center h-5">
@@ -174,7 +164,7 @@ const EditableField: React.FC<{
             {multiline ? 
                 <textarea 
                     value={value} 
-                    onChange={handleInputChange} 
+                    onChange={(e) => onChange(e.target.value)} 
                     disabled={disabled} 
                     placeholder={placeholder}
                     rows={3} 
@@ -185,7 +175,7 @@ const EditableField: React.FC<{
                 <input 
                     type="text" 
                     value={value} 
-                    onChange={handleInputChange} 
+                    onChange={(e) => onChange(e.target.value)} 
                     disabled={disabled} 
                     placeholder={placeholder}
                     onFocus={onFocus}
@@ -227,7 +217,7 @@ const ResolutionModal: React.FC<{
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 onClick={e => e.stopPropagation()}
-                className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-gray-200 dark:border-gray-700"
+                className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-sm w-full overflow-hidden border border-gray-200 dark:border-gray-700"
             >
                 <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/5">
                     <h3 className="font-bold text-lg text-gray-900 dark:text-white">Verify Transcription</h3>
@@ -262,7 +252,16 @@ const ResolutionModal: React.FC<{
                 </div>
             </motion.div>
         </div>
-    )
+    );
+};
+
+// --- Main View Component ---
+
+interface ReviewViewProps {
+  prescription: PrescriptionData | null;
+  imageUrls: string[] | null;
+  onSave: (data: PrescriptionData) => Promise<void>;
+  onVerify: (data: PrescriptionData) => Promise<void>;
 }
 
 export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls, onSave, onVerify }) => {
@@ -286,14 +285,13 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
     if (prescription) {
         setEditableData(prev => prev || JSON.parse(JSON.stringify(prescription)));
         if (FEATURE_FLAGS.VERIFY_RXNORM) {
-            // Only auto-run if verification is completely missing
             if (prescription.medication && prescription.medication.length > 0 && !prescription.medication[0].verification) {
                 const imageBase64 = imageUrls && imageUrls.length > 0 ? imageUrls[0].split(',')[1] : undefined;
                 runVerification(prescription.medication, imageBase64);
             }
         }
     }
-  }, [prescription]);
+  }, [prescription, imageUrls]);
 
   const runVerification = async (meds: Medicine[], imageBase64?: string) => {
       setIsVerifying(true);
@@ -411,14 +409,9 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       }
   };
 
-  const getImageTransform = () => {
-      if (activeMedIndex === null || !editableData?.medication[activeMedIndex]?.coordinates) return { scale: 1, x: 0, y: 0 };
-      const [ymin, xmin, ymax, xmax] = editableData.medication[activeMedIndex].coordinates!;
-      const centerY = (ymin + ymax) / 2 / 10;
-      const centerX = (xmin + xmax) / 2 / 10;
-      return { scale: 2, x: `${50 - centerX}%`, y: `${50 - centerY}%` };
-  };
-  const transform = getImageTransform();
+  const transform = activeMedIndex !== null && editableData?.medication[activeMedIndex]?.coordinates 
+      ? { scale: 2, x: `${50 - (editableData.medication[activeMedIndex].coordinates![1] + editableData.medication[activeMedIndex].coordinates![3]) / 2 / 10}%`, y: `${50 - (editableData.medication[activeMedIndex].coordinates![0] + editableData.medication[activeMedIndex].coordinates![2]) / 2 / 10}%` }
+      : { scale: 1, x: 0, y: 0 };
   
   const getFilterString = () => {
       const filters = [];
@@ -540,7 +533,6 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                           <EditableField label="Route" value={med.route || ''} onChange={v => handleMedChange(i, 'route', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
                       </div>
 
-                      {/* Manual Sign-off Indicator */}
                       {!med.humanConfirmed && (
                           <div className="pl-2 mt-2">
                               <button 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HamburgerMenuIcon } from './icons/HamburgerMenuIcon.tsx';
 import { AnalyzeIcon } from './icons/AnalyzeIcon.tsx';
@@ -31,12 +30,12 @@ export const Header: React.FC<HeaderProps> = ({
   showTreatments, 
   onLogoClick 
 }) => {
-  const navLinks: { id: AppTab; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
-    { id: AppTab.ANALYZE, label: 'Analyze', icon: AnalyzeIcon },
-    { id: AppTab.REVIEW, label: 'Review', icon: ClipboardDocumentCheckIcon },
-    { id: AppTab.TREATMENTS, label: 'Insights', icon: StethoscopeIcon },
-    { id: AppTab.REPORTS, label: 'Reports', icon: FolderIcon },
-    { id: AppTab.SETTINGS, label: 'Settings', icon: SettingsIcon },
+  const navLinks: { id: AppTab; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>>; color: string; bg: string }[] = [
+    { id: AppTab.ANALYZE, label: 'Analyze', icon: AnalyzeIcon, color: 'text-primary', bg: 'bg-primary/5' },
+    { id: AppTab.REVIEW, label: 'Review', icon: ClipboardDocumentCheckIcon, color: 'text-amber-500', bg: 'bg-amber-500/5' },
+    { id: AppTab.TREATMENTS, label: 'Insights', icon: StethoscopeIcon, color: 'text-rose-500', bg: 'bg-rose-500/5' },
+    { id: AppTab.REPORTS, label: 'Reports', icon: FolderIcon, color: 'text-brand-blue', bg: 'bg-brand-blue/5' },
+    { id: AppTab.SETTINGS, label: 'Settings', icon: SettingsIcon, color: 'text-slate-500', bg: 'bg-slate-500/5' },
   ];
 
   const availableNavLinks = showTreatments ? navLinks : navLinks.filter(l => l.id !== AppTab.TREATMENTS);
@@ -50,11 +49,9 @@ export const Header: React.FC<HeaderProps> = ({
             <BrandLogo variant="header" className="transform group-hover:scale-105 transition-transform" />
           </div>
           
-          <div className="hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-white/5 p-1.5 rounded-full border border-slate-200 dark:border-white/5 backdrop-blur-md">
+          <div className="hidden md:flex items-center gap-1.5 bg-slate-100/50 dark:bg-white/5 p-1.5 rounded-full border border-slate-200 dark:border-white/5 backdrop-blur-md">
             {availableNavLinks.map(link => {
               const isActive = activeTab === link.id;
-              
-              // Settings is always available, others dependent on auth/data
               const isDisabled = link.id !== AppTab.ANALYZE && link.id !== AppTab.SETTINGS && !isLoggedIn && !(isGuest && hasData);
               
               return (
@@ -62,25 +59,33 @@ export const Header: React.FC<HeaderProps> = ({
                   key={link.id}
                   onClick={() => !isDisabled && setActiveTab(link.id)}
                   disabled={isDisabled}
-                  className={`relative flex items-center px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300
+                  className={`relative flex items-center px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all duration-500
                       ${isActive 
-                          ? 'text-brand-blue dark:text-white shadow-sm' 
+                          ? `${link.color} shadow-sm` 
                           : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                       }
-                      ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
+                      ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer'}
                   `}
                 >
                   {isActive && (
                     <motion.div 
                         layoutId="activeTabBg"
-                        className="absolute inset-0 bg-white dark:bg-white/10 rounded-full shadow-md border border-slate-200 dark:border-white/10"
+                        className={`absolute inset-0 ${link.bg} rounded-full border border-current opacity-20`}
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
+                  
                   <span className="relative z-10 flex items-center gap-2.5">
-                    <link.icon className={`w-4 h-4 ${isActive ? 'opacity-100 text-brand-blue' : 'opacity-60'}`} />
+                    <link.icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110' : 'opacity-60'}`} />
                     {link.label}
                   </span>
+
+                  {isActive && (
+                    <motion.div 
+                      layoutId="activeTabDot"
+                      className={`nav-accent bg-current`}
+                    />
+                  )}
                 </button>
               );
             })}

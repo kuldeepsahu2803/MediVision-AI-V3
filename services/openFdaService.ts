@@ -1,4 +1,3 @@
-
 import { FdaVerification } from '../types';
 
 const BASE_URL = 'https://api.fda.gov/drug/label.json';
@@ -22,10 +21,16 @@ export const searchFdaDrug = async (drugName: string, signal?: AbortSignal): Pro
 
   try {
     // Construct query: search brand OR generic name
-    // We use .exact match via quoting to increase relevance, but openFDA syntax is specific.
-    // openfda.brand_name:"NAME" matches exact words.
-    const query = `search=openfda.brand_name:"${cleanName}"+OR+openfda.generic_name:"${cleanName}"&limit=1`;
-    const response = await fetch(`${BASE_URL}?${query}`, { signal });
+    // Using encodeURIComponent for safety against special characters and spaces
+    const searchTerm = encodeURIComponent(`"${cleanName}"`);
+    const query = `search=openfda.brand_name:${searchTerm}+OR+openfda.generic_name:${searchTerm}&limit=1`;
+    
+    const response = await fetch(`${BASE_URL}?${query}`, { signal }).catch(err => {
+      console.warn("FDA Network Fetch Failed:", err);
+      return null;
+    });
+
+    if (!response) return null;
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -33,7 +38,7 @@ export const searchFdaDrug = async (drugName: string, signal?: AbortSignal): Pro
         cache[cleanName] = { verified: false, lastChecked: new Date().toISOString() };
         return cache[cleanName];
       }
-      throw new Error(`FDA API Error: ${response.statusText}`);
+      return null;
     }
 
     const data = await response.json();
@@ -61,10 +66,9 @@ export const searchFdaDrug = async (drugName: string, signal?: AbortSignal): Pro
     return null;
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
-        // Request cancelled, ignore
         return null;
     }
-    console.warn("OpenFDA fetch failed:", e);
+    console.warn("OpenFDA parse failed:", e);
     return null;
   }
 };
@@ -79,11 +83,11 @@ export const getDrugSuggestions = async (query: string): Promise<Partial<FdaVeri
     if (!cleanQuery || cleanQuery.length < 2) return [];
 
     try {
-        // Use a wildcard search for prefix matching
-        const searchQuery = `openfda.brand_name:${cleanQuery}*+OR+openfda.generic_name:${cleanQuery}*`;
-        const response = await fetch(`${BASE_URL}?search=${searchQuery}&limit=10`);
+        const term = encodeURIComponent(`${cleanQuery}*`);
+        const searchQuery = `openfda.brand_name:${term}+OR+openfda.generic_name:${term}`;
+        const response = await fetch(`${BASE_URL}?search=${searchQuery}&limit=10`).catch(() => null);
 
-        if (!response.ok) return [];
+        if (!response || !response.ok) return [];
 
         const data = await response.json();
         const results = data.results || [];
@@ -98,7 +102,6 @@ export const getDrugSuggestions = async (query: string): Promise<Partial<FdaVeri
         }).filter((item: any) => item.standardName);
 
     } catch (e) {
-        console.warn("OpenFDA suggestions failed:", e);
         return [];
     }
 };

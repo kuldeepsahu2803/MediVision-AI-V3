@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { PrescriptionData } from '../types.ts';
 import { useAuthSession } from './useAuthSession.ts';
@@ -8,93 +7,58 @@ import { syncLocalToCloud } from '../services/syncService.ts';
 export const useMedicalHistory = () => {
   const [history, setHistory] = useState<PrescriptionData[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const { isLoggedIn, user } = useAuthSession();
+  const { isLoggedIn, user, loading: authLoading } = useAuthSession();
   const hasSyncedRef = useRef(false);
 
-  // Load Data (Guest or User)
   useEffect(() => {
-    let mounted = true;
+    if (authLoading) return; // Wait for terminal auth state
 
+    let mounted = true;
     const loadData = async () => {
       setIsLoadingHistory(true);
       try {
-        // 1. If Just Logged In -> Sync
         if (isLoggedIn && !hasSyncedRef.current) {
-            await syncLocalToCloud();
-            hasSyncedRef.current = true;
-        }
-
-        // 2. Load (will fetch from Supabase if logged in, Local if not)
-        if (isLoggedIn && user) {
-            console.log(`Fetching history for user: ${user.id}`);
+            try {
+                await syncLocalToCloud();
+                hasSyncedRef.current = true;
+            } catch (syncErr) { console.warn("Sync failed, proceeding with local load."); }
         }
         
         const dbData = await dbService.getAllPrescriptions();
-        
-        if (mounted) {
-            setHistory(dbData);
-        }
+        if (mounted) setHistory(dbData || []);
       } catch (e) {
-        console.error("Failed to load medical history:", e);
+        console.error("Critical Failure: Medical History Loader:", e);
       } finally {
-        if (mounted) {
-            setIsLoadingHistory(false);
-        }
+        if (mounted) setIsLoadingHistory(false);
       }
     };
 
     loadData();
-    
     return () => { mounted = false; };
-  }, [isLoggedIn, user]);
+  }, [isLoggedIn, user, authLoading]);
 
   const saveToHistory = async (dataToSave: PrescriptionData) => {
-    // Add timestamp for correct sorting and display
-    const dataWithTimestamp = {
-        ...dataToSave,
-        timestamp: dataToSave.timestamp || new Date().toISOString()
-    };
-
-    // 1. Optimistic Update (Immediate UI feedback)
-    setHistory(prevHistory => {
-        const existingIndex = prevHistory.findIndex(h => h.id === dataWithTimestamp.id);
-        if (existingIndex > -1) {
-            const newHistory = [...prevHistory];
-            newHistory[existingIndex] = dataWithTimestamp;
-            return newHistory;
-        } else {
-            return [dataWithTimestamp, ...prevHistory];
+    const dataWithTimestamp = { ...dataToSave, timestamp: dataToSave.timestamp || new Date().toISOString() };
+    setHistory(prev => {
+        const idx = prev.findIndex(h => h.id === dataWithTimestamp.id);
+        if (idx > -1) {
+            const next = [...prev];
+            next[idx] = dataWithTimestamp;
+            return next;
         }
+        return [dataWithTimestamp, ...prev];
     });
-
-    // 2. Persist to DB (Auto-routes to Local or Cloud based on Auth)
     try {
         await dbService.savePrescription(dataWithTimestamp);
-        
-        // Reload to get true IDs (especially if Postgres generated UUIDs)
-        const freshData = await dbService.getAllPrescriptions();
-        setHistory(freshData);
-    } catch (e) {
-        console.error("Failed to save record to DB:", e);
-        // Optional: Revert optimistic update here if critical
-    }
+        const fresh = await dbService.getAllPrescriptions();
+        setHistory(fresh || []);
+    } catch (e) { console.error("Database Save Failure:", e); }
   };
 
   const deleteFromHistory = async (idToDelete: string) => {
-    if (!idToDelete) return;
-
-    // 1. Optimistic Update
-    setHistory(prevHistory => prevHistory.filter(h => h.id !== idToDelete));
-
-    // 2. Persist to DB
-    try {
-        await dbService.deletePrescription(idToDelete);
-    } catch (e) {
-        console.error("Failed to delete record from DB:", e);
-        // Optional: Fetch data again to revert if delete failed
-        const freshData = await dbService.getAllPrescriptions();
-        setHistory(freshData);
-    }
+    setHistory(prev => prev.filter(h => h.id !== idToDelete));
+    try { await dbService.deletePrescription(idToDelete); } 
+    catch (e) { console.error("Database Delete Failure:", e); }
   };
 
   return { history, saveToHistory, deleteFromHistory, isLoadingHistory };

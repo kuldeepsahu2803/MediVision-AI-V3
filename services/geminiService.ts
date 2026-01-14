@@ -62,7 +62,7 @@ export const analyzePrescription = async (images: { base64Data: string; mimeType
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: { parts: [...imageParts, textPart] },
       config: {
         responseMimeType: 'application/json',
@@ -104,7 +104,7 @@ export const reReadHandwriting = async (imageBase64: string, coordinates: number
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: { parts: [imagePart, textPart] },
       config: {
         thinkingConfig: { thinkingBudget: 0 }
@@ -125,7 +125,7 @@ export const translateContent = async (text: string, targetLanguage: string): Pr
   
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: prompt,
         });
         return response.text?.trim() || text;
@@ -149,7 +149,7 @@ export const getTreatmentSuggestions = async (prescription: PrescriptionData): P
     
     try {
       const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
+          model: 'gemini-3-pro-preview',
           contents: prompt,
           config: {
               responseMimeType: "application/json",
@@ -185,7 +185,7 @@ export const getDrugReferenceInfo = async (drugName: string): Promise<DrugRefere
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: `Provide general reference information for the drug: ${drugName}. Be objective and non-diagnostic.`,
       config: {
         responseMimeType: "application/json",

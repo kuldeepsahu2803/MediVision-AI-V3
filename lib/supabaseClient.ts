@@ -5,11 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 const FALLBACK_URL = "https://qhxegzjcqqetmxajrtqf.supabase.co";
 const FALLBACK_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoeGVnempjcXFldG14YWpydHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTEyMDIsImV4cCI6MjA4MTEyNzIwMn0.1CPkcfikzrbSdIvYsOKjiiGn5UawkjpINWhcZnIzlnE";
 
-// Safe access to environment variables
-const env = (import.meta as any).env || {};
-
-const supabaseUrl = env.VITE_SUPABASE_URL || FALLBACK_URL;
-const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || FALLBACK_KEY;
+// Standard Vite approach for environment variables
+// Use type casting to bypass TS errors if import.meta.env is not natively recognized in the environment
+const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || FALLBACK_URL;
+const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || FALLBACK_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error("Supabase credentials are missing. Please check your configuration.");
