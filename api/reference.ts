@@ -3,17 +3,17 @@ import { GoogleGenAI, Type } from "@google/genai";
 const drugReferenceSchema = {
   type: Type.OBJECT,
   properties: {
-    description: { type: Type.STRING, description: "Summary of what the drug is." },
-    category: { type: Type.STRING, description: "Therapeutic class." },
-    usageNotes: { type: Type.STRING, description: "Brief usage instructions." },
-    precautions: { type: Type.STRING, description: "Important warnings." }
+    description: { type: Type.STRING },
+    category: { type: Type.STRING },
+    usageNotes: { type: Type.STRING },
+    precautions: { type: Type.STRING }
   },
   required: ["description", "category", "usageNotes", "precautions"]
 };
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API Key missing' });
 
   try {
@@ -21,16 +21,14 @@ export default async function handler(req: any, res: any) {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `Provide general reference info for: ${drugName}. Be objective.`,
+      contents: `Provide a clinical reference for: ${drugName}.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: drugReferenceSchema,
       },
     });
 
-    let text = response.text || '{}';
-    text = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
-    return res.status(200).json(JSON.parse(text));
+    return res.status(200).json(JSON.parse(response.text || '{}'));
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

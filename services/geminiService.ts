@@ -1,46 +1,33 @@
 import { PrescriptionData, AiSuggestions } from '../types.ts';
 
 /**
- * Robustly extracts JSON from a string that might contain Markdown formatting.
+ * SECURITY ARCHITECTURE:
+ * Proxy through Vercel Serverless Functions to protect sensitive API keys.
  */
-const extractJson = (text: string) => {
+const callSecureApi = async (endpoint: string, payload: any) => {
     try {
-        // First try direct parse
-        return JSON.parse(text);
-    } catch (e) {
-        // Fallback: try to find content between ```json and ```
-        const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (match && match[1]) {
-            return JSON.parse(match[1]);
+        const response = await fetch(`/api/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            // Detect missing server configuration
+            if (response.status === 500 && errData.error?.includes('Key')) {
+                throw new Error("Configuration Error: The clinical API key is missing from your Vercel Environment Variables. Please set GEMINI_API_KEY and redeploy.");
+            }
+            throw new Error(errData.error || `Clinical Engine Error (${response.status})`);
         }
-        // Last resort: find first { and last }
-        const firstBrace = text.indexOf('{');
-        const lastBrace = text.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-            return JSON.parse(text.substring(firstBrace, lastBrace + 1));
+
+        return await response.json();
+    } catch (e: any) {
+        if (e.name === 'TypeError' && e.message === 'Failed to fetch') {
+            throw new Error("Connectivity Error: Could not reach the clinical engine. Ensure you are online.");
         }
         throw e;
     }
-};
-
-/**
- * SECURITY ARCHITECTURE:
- * Instead of calling Google SDK from the client (leaking keys), 
- * we proxy through Vercel Serverless Functions.
- */
-const callSecureApi = async (endpoint: string, payload: any) => {
-    const response = await fetch(`/api/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Clinical Engine Error (${response.status})`);
-    }
-
-    return response.json();
 };
 
 export const analyzePrescription = async (images: { base64Data: string; mimeType: string }[]): Promise<Omit<PrescriptionData, 'id' | 'status'>> => {
@@ -49,10 +36,10 @@ export const analyzePrescription = async (images: { base64Data: string; mimeType
     if (result && Array.isArray(result.medication)) {
         return result as Omit<PrescriptionData, 'id' | 'status'>;
     }
-    throw new Error("Parsed clinical data does not match the required schema.");
-  } catch (e) {
-    console.error("Secure Analysis Pipeline Failed:", e);
-    throw new Error(e instanceof Error ? e.message : "The clinical vision engine failed to process the request.");
+    throw new Error("Validation Error: Parsed data does not match the clinical schema.");
+  } catch (e: any) {
+    console.error("Analysis Pipeline Failed:", e);
+    throw new Error(e.message || "The clinical vision engine failed to process the request.");
   }
 };
 

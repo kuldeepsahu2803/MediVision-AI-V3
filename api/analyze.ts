@@ -37,12 +37,17 @@ const prescriptionSchema = {
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'Clinical API Key not configured on server' });
+  // Use the key configured on Vercel dashboard
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Clinical API Key (GEMINI_API_KEY) not configured on the Vercel dashboard.' });
+  }
 
   try {
     const { images } = req.body;
-    if (!images || !Array.isArray(images)) return res.status(400).json({ error: 'Images payload missing' });
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: 'No prescription images provided for analysis.' });
+    }
 
     const ai = new GoogleGenAI({ apiKey });
     
@@ -54,13 +59,22 @@ export default async function handler(req: any, res: any) {
     }));
 
     const textPart = {
-      text: `You are "MediVision Clinical Intelligence" — an expert medical-document analyzer.
-      Inspect the provided document(s). EXTRACT ALL MEDICATIONS. Use YYYY-MM-DD for dates.
-      If a field is missing, use 'N/A'. Produce JSON object matching the provided schema.`
+      text: `You are "MediVision Clinical Intelligence" — a world-class expert in medical document digitization.
+      
+      TASK:
+      1. Inspect the provided prescription image(s) with extreme precision.
+      2. Extract all patient, doctor, and clinic metadata.
+      3. Transcribe every medication listed precisely.
+      4. Provide bounding box coordinates [ymin, xmin, ymax, xmax] for each medication name to assist in audit verification.
+      
+      RULES:
+      - Use YYYY-MM-DD for all dates.
+      - If a field is not present, use 'N/A'.
+      - Output strictly valid JSON matching the schema.`
     };
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-pro-preview', // High-quality reasoning for medical OCR
       contents: { parts: [...imageParts, textPart] },
       config: {
         responseMimeType: 'application/json',
@@ -68,15 +82,16 @@ export default async function handler(req: any, res: any) {
       },
     });
 
-    // Handle JSON parsing safely
-    let contentText = response.text || '';
-    // Strip markdown code blocks if present
-    contentText = contentText.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+    const contentText = response.text;
+    if (!contentText) {
+        throw new Error("Clinical engine returned an empty response.");
+    }
     
     const parsed = JSON.parse(contentText);
     return res.status(200).json(parsed);
   } catch (error: any) {
-    console.error('API Analyze Error:', error);
-    return res.status(500).json({ error: error.message || 'Internal Clinical Engine Error' });
+    console.error('Vercel API Error (Analyze):', error);
+    const statusCode = error.message?.includes('API key') ? 401 : 500;
+    return res.status(statusCode).json({ error: error.message || 'Internal Clinical Engine Error during analysis.' });
   }
 }
