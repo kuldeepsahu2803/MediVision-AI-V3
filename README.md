@@ -1,6 +1,8 @@
 # 🩺 MediVision AI – Medical Image Analysis using Generative AI
 
-![MediVision AI Banner](screenshot/HomePage.jpeg)
+![Landing Page](https://github.com/user-attachments/assets/6f3a851c-753e-4e2f-b449-fb6b4d974a5c)
+
+
 
 ## 🌟 Overview
 
@@ -136,20 +138,21 @@ MediVision AI supports two user types:
 ## 📸 Screenshots
 
 ### Home Page
-![Home Page](screenshot/HomePage.jpeg)
 *Clean, modern landing page with intuitive navigation*
+![Landing Page](https://github.com/user-attachments/assets/80a920de-4889-4250-8cd1-83199299fc9b)
 
 ### Upload & Analysis Interface
-![Upload and Analyze](screenshot/Upload_and_Analyze.jpeg)
 *Simple drag-and-drop interface for uploading medical documents*
+![Upload    Analysis Interface](https://github.com/user-attachments/assets/15347740-6249-4ab1-85eb-c1db6b245eff)
 
 ### Data Review & Editing
-![Edit Data](screenshot/Edit_Data.jpeg)
 *Interactive interface for reviewing and editing extracted medical data*
+![Data Review](https://github.com/user-attachments/assets/fe1ca0b9-3db9-44d2-9441-78b7410b5ac5)
 
 ### Comprehensive Reports
-![Report View](screenshot/Report.jpeg)
 *Detailed analysis reports with structured medical information*
+![Reports](https://github.com/user-attachments/assets/cbebffd9-e0b0-4909-81ea-8e150c46f7eb)
+
 
 ---
 
