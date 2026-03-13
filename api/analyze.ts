@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 const prescriptionSchema = {
@@ -37,16 +38,16 @@ const prescriptionSchema = {
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Use the key configured on Vercel dashboard
+  // Phase 1: Clinical API Protection Check
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Clinical API Key (GEMINI_API_KEY) not configured on the Vercel dashboard.' });
+    return res.status(500).json({ error: 'Clinical API Key not configured on the Vercel dashboard.' });
   }
 
   try {
     const { images } = req.body;
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: 'No prescription images provided for analysis.' });
+      return res.status(400).json({ error: 'No prescription images provided.' });
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -74,11 +75,14 @@ export default async function handler(req: any, res: any) {
     };
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // High-quality reasoning for medical OCR
+      model: 'gemini-3-pro-preview',
       contents: { parts: [...imageParts, textPart] },
       config: {
         responseMimeType: 'application/json',
         responseSchema: prescriptionSchema,
+        // Phase 6: Increased token budget to prevent JSON truncation
+        maxOutputTokens: 2048,
+        thinkingConfig: { thinkingBudget: 0 }
       },
     });
 
@@ -87,11 +91,16 @@ export default async function handler(req: any, res: any) {
         throw new Error("Clinical engine returned an empty response.");
     }
     
-    const parsed = JSON.parse(contentText);
-    return res.status(200).json(parsed);
+    try {
+        const parsed = JSON.parse(contentText);
+        return res.status(200).json(parsed);
+    } catch (parseErr) {
+        console.error("JSON Truncation Error:", contentText);
+        throw new Error("Clinical response malformed. Please try scanning again with higher resolution.");
+    }
   } catch (error: any) {
     console.error('Vercel API Error (Analyze):', error);
     const statusCode = error.message?.includes('API key') ? 401 : 500;
-    return res.status(statusCode).json({ error: error.message || 'Internal Clinical Engine Error during analysis.' });
+    return res.status(statusCode).json({ error: error.message || 'Internal Clinical Engine Error.' });
   }
 }

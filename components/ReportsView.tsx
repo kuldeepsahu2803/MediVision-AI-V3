@@ -177,9 +177,10 @@ interface ReportsViewProps {
     isLoading: boolean;
     onSelectPrescription: (report: PrescriptionData) => void;
     onDeleteReport: (id: string) => void;
+    onNavigateToAnalyze: () => void;
 }
 
-export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, onSelectPrescription, onDeleteReport }) => {
+export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, onSelectPrescription, onDeleteReport, onNavigateToAnalyze }) => {
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
     const groupedHistory = useMemo(() => groupReportsByDate(history), [history]);
@@ -221,22 +222,47 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
 
     if (history.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-40 text-center animate-fadeIn max-w-lg mx-auto">
+            <div className="flex flex-col items-center justify-center py-40 text-center animate-fadeIn max-w-xl mx-auto px-4">
                 <div className="relative mb-12">
-                    <div className="size-40 bg-slate-50 dark:bg-zinc-900 rounded-[3rem] flex items-center justify-center text-slate-300 dark:text-slate-800 rotate-3 border-2 border-dashed border-slate-200 dark:border-white/5">
-                        <FolderIcon className="size-20" />
-                    </div>
-                    <div className="absolute -bottom-4 -right-4 size-20 bg-brand-blue text-white rounded-3xl flex items-center justify-center shadow-2xl -rotate-6 border-4 border-white dark:border-black">
-                        <AnalyzeIcon className="size-10" />
-                    </div>
+                    <motion.div 
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', damping: 15 }}
+                        className="size-48 bg-slate-50 dark:bg-zinc-900 rounded-[4rem] flex items-center justify-center text-slate-200 dark:text-slate-800 rotate-3 border-2 border-dashed border-slate-200 dark:border-white/5"
+                    >
+                        <FolderIcon className="size-24" />
+                    </motion.div>
+                    <motion.div 
+                        initial={{ scale: 0, x: 20, y: 20 }}
+                        animate={{ scale: 1, x: 0, y: 0 }}
+                        transition={{ delay: 0.3, type: 'spring' }}
+                        className="absolute -bottom-4 -right-4 size-24 bg-brand-blue text-white rounded-[2rem] flex items-center justify-center shadow-2xl -rotate-6 border-4 border-white dark:border-black"
+                    >
+                        <AnalyzeIcon className="size-12" />
+                    </motion.div>
                 </div>
-                <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">Clinical Archive Empty</h2>
-                <p className="text-slate-500 dark:text-slate-400 mb-12 text-lg leading-relaxed font-medium">
-                    Verified clinical reports and digitized prescriptions will appear here automatically.
+                
+                <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tighter leading-tight">
+                    Your Clinical Archive is <span className="text-brand-blue">Awaiting Data</span>
+                </h2>
+                
+                <p className="text-slate-500 dark:text-slate-400 mb-10 text-xl leading-relaxed font-medium">
+                    Ready to digitize your workflow? Upload your first prescription to see AI extraction and clinical verification in action.
                 </p>
-                <div className="px-6 py-4 rounded-3xl bg-brand-blue/5 border border-brand-blue/10 inline-flex items-center gap-3">
-                    <span className="material-symbols-outlined text-brand-blue text-lg">info</span>
-                    <span className="text-[10px] text-brand-blue font-black uppercase tracking-[0.2em]">Swipe cards left to purge records permanently.</span>
+
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                    <button 
+                        onClick={onNavigateToAnalyze}
+                        className="btn-gradient-cta px-10 py-5 rounded-[2rem] text-lg font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+                    >
+                        <span className="material-symbols-outlined text-2xl">add_circle</span>
+                        Digitize First Script
+                    </button>
+                </div>
+
+                <div className="mt-12 px-6 py-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 inline-flex items-center gap-3">
+                    <span className="material-symbols-outlined text-slate-400 text-lg">verified_user</span>
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Secure HIPAA-Ready Cloud Storage Active</span>
                 </div>
             </div>
         );
@@ -264,7 +290,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
                     <button className="flex items-center gap-2.5 px-8 py-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95">
                         <span className="material-symbols-outlined text-[18px]">filter_list</span> Filters
                     </button>
-                    <button className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black text-xs font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                    <button 
+                        onClick={onNavigateToAnalyze}
+                        className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black text-xs font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                    >
                         <span className="material-symbols-outlined text-[18px]">add_circle</span> New Report
                     </button>
                 </div>
@@ -362,7 +391,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
                             </div>
                             <h5 className="text-3xl font-black mb-4 tracking-tighter">Expand History</h5>
                             <p className="mb-10 text-base text-slate-400 font-medium leading-relaxed">Sync external PDF results to maintain a holistic patient timeline.</p>
-                            <button className="w-full rounded-2xl bg-white/10 py-5 text-xs font-black uppercase tracking-widest text-white hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 active:scale-95">
+                            <button 
+                                onClick={onNavigateToAnalyze}
+                                className="w-full rounded-2xl bg-white/10 py-5 text-xs font-black uppercase tracking-widest text-white hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 active:scale-95"
+                            >
                                 Browse Medical Files
                             </button>
                         </div>

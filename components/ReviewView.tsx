@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { PrescriptionData, Medicine, VerificationResult, RxNormCandidate, AuditEntry } from '../types.ts';
 import { Spinner } from './Spinner.tsx';
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useHaptic } from '../hooks/useHaptic.ts';
 import { AutocompleteInput } from './ui/AutocompleteInput.tsx';
 import { FEATURE_FLAGS } from '../lib/featureFlags.ts';
+import { HoldToConfirmButton } from './ui/HoldToConfirmButton.tsx';
 
 // --- Clinical Verification Icons ---
 
@@ -37,7 +39,7 @@ const EyeSlashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-// --- Sub-components (Moved outside to prevent re-creation) ---
+// --- Sub-components ---
 
 const AuditTrailModal: React.FC<{ trail: AuditEntry[], onClose: () => void }> = ({ trail, onClose }) => {
     return (
@@ -129,7 +131,7 @@ const VerificationStatusBadge: React.FC<{
         <div className="group relative">
             <motion.button 
                 whileTap={{ scale: 0.95 }}
-                onClick={onClick}
+                onClick={(e) => { e.stopPropagation(); onClick?.(); }}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border ${style.bg} hover:brightness-95 transition-all`} 
             >
                 <Icon className="w-3.5 h-3.5" />
@@ -212,43 +214,72 @@ const ResolutionModal: React.FC<{
     onClose: () => void 
 }> = ({ candidate, currentName, onSelect, onClose }) => {
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl" onClick={onClose}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xl" onClick={onClose}>
             <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 onClick={e => e.stopPropagation()}
-                className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-sm w-full overflow-hidden border border-gray-200 dark:border-gray-700"
+                className="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-white/10"
             >
-                <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/5">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Verify Transcription</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">"{currentName}" was not found exactly in database.</p>
+                <div className="p-8 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+                            <span className="material-symbols-outlined text-2xl">clinical_notes</span>
+                        </div>
+                        <div>
+                            <h3 className="font-black text-2xl text-slate-900 dark:text-white tracking-tight">Refine Medication</h3>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">AI Uncertainty Resolution</p>
+                        </div>
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                        The transcription <span className="text-slate-900 dark:text-white font-black italic">"{currentName}"</span> matched multiple database entries. Please select the correct standardized label:
+                    </p>
                 </div>
-                <div className="p-2 max-h-[300px] overflow-y-auto">
+                
+                <div className="p-4 max-h-[350px] overflow-y-auto no-scrollbar space-y-2">
                     {candidate.length > 0 ? (
-                        <>
-                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-2 uppercase tracking-widest">Database Suggestions</p>
-                        {candidate.map((c, i) => (
-                            <button 
+                        candidate.map((c, i) => (
+                            <motion.button 
                                 key={i}
+                                whileHover={{ x: 4 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => onSelect(c.name)}
-                                className="w-full text-left px-4 py-3 hover:bg-brand-blue/10 dark:hover:bg-brand-blue/20 rounded-lg transition-colors group"
+                                className="w-full text-left p-5 bg-white dark:bg-white/5 hover:bg-brand-blue/5 border border-slate-100 dark:border-white/5 rounded-2xl transition-all group flex items-center justify-between"
                             >
-                                <div className="flex justify-between items-center">
-                                    <span className="font-medium text-gray-800 dark:text-gray-200 group-hover:text-brand-blue">{c.name}</span>
-                                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">{c.score}% Match</span>
+                                <div className="flex flex-col">
+                                    <span className="font-black text-slate-900 dark:text-white group-hover:text-brand-blue text-sm uppercase tracking-tight">{c.name}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">RxNorm ID: {c.rxcui} • {c.source}</span>
                                 </div>
-                            </button>
-                        ))}
-                        </>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">{c.score}% Match</span>
+                                    <span className="material-symbols-outlined text-slate-300 group-hover:text-brand-blue transition-colors">chevron_right</span>
+                                </div>
+                            </motion.button>
+                        ))
                     ) : (
-                        <div className="p-4 text-center text-gray-500">
-                            <p>No similar drugs found in database. Manual entry required.</p>
+                        <div className="p-10 text-center space-y-4">
+                            <div className="size-16 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                                <span className="material-symbols-outlined text-3xl">search_off</span>
+                            </div>
+                            <p className="text-sm text-slate-500 font-medium">No candidate matches found in the clinical repository.</p>
                         </div>
                     )}
                 </div>
-                <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-between gap-3">
-                    <button onClick={onClose} className="flex-1 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg">Cancel</button>
-                    <button onClick={() => onSelect(currentName)} className="flex-1 py-2 text-sm font-medium text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 rounded-lg">Confirm Verbatim</button>
+                
+                <div className="p-6 border-t border-slate-100 dark:border-white/5 flex flex-col gap-3">
+                    <button 
+                        onClick={() => onSelect(currentName)} 
+                        className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-2xl transition-all"
+                    >
+                        Confirm Original Verbatim
+                    </button>
+                    <button 
+                        onClick={onClose} 
+                        className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-black text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl active:scale-95 transition-all"
+                    >
+                        Cancel Resolution
+                    </button>
                 </div>
             </motion.div>
         </div>
@@ -274,6 +305,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
   const [isSharing, setIsSharing] = useState(false);
   const [reverifyingIndex, setReverifyingIndex] = useState<number | null>(null);
   const [showAuditModal, setShowAuditModal] = useState(false);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(true);
 
   const [imageFilters, setImageFilters] = useState({ contrast: false, brightness: false, grayscale: false });
   const [showImageControls, setShowImageControls] = useState(false);
@@ -371,7 +403,6 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       
       const unconfirmedCount = editableData.medication.filter(m => !m.humanConfirmed).length;
       if (unconfirmedCount > 0) {
-          alert(`Please perform human sign-off on all ${unconfirmedCount} medication entries before final locking.`);
           return;
       }
 
@@ -462,107 +493,178 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       </div>
   );
 
-  const renderForm = () => (
-      <div className="p-6 space-y-6">
-          <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Rx Details</h2>
-              <div className="flex items-center gap-3">
-                 <button onClick={() => { triggerHaptic('light'); setShowAuditModal(true); }} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-brand-blue" title="View Audit Trail">
-                    <HistoryIcon className="w-5 h-5" />
-                 </button>
-                 {isVerifying && <Spinner className="w-4 h-4 text-brand-blue" />}
-                 {editableData && <StatusBadge status={editableData.status} />}
-              </div>
-          </div>
-          <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                  <EditableField label="Patient Name" value={editableData?.patientName || ''} onChange={v => handleFieldChange('patientName', v)} />
-                  <EditableField label="Date" value={editableData?.date || ''} onChange={v => handleFieldChange('date', v)} placeholder="YYYY-MM-DD" />
-              </div>
-              <EditableField label="Prescriber" value={editableData?.doctorName || ''} onChange={v => handleFieldChange('doctorName', v)} />
-              
-              <div className="border-t border-slate-200 dark:border-slate-700 opacity-50 my-4" />
-              
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Active Regimen</h3>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-white/5 px-3 py-1 rounded-full border border-slate-100 dark:border-white/5">
-                    {editableData?.medication.length} Agents Identified
+  const renderForm = () => {
+      const suggestions = editableData?.aiSuggestions;
+      const hasCritical = suggestions?.criticalAlerts && suggestions.criticalAlerts.length > 0;
+      const hasGeneral = suggestions?.generalRecommendations && suggestions.generalRecommendations.length > 0;
+      const hasAnySuggestions = hasCritical || hasGeneral;
+
+      return (
+        <div className="p-6 space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Rx Details</h2>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => { triggerHaptic('light'); setShowAuditModal(true); }} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-brand-blue" title="View Audit Trail">
+                        <HistoryIcon className="w-5 h-5" />
+                    </button>
+                    {isVerifying && <Spinner className="w-4 h-4 text-brand-blue" />}
+                    {editableData && <StatusBadge status={editableData.status} />}
                 </div>
-              </div>
+            </div>
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <EditableField label="Patient Name" value={editableData?.patientName || ''} onChange={v => handleFieldChange('patientName', v)} />
+                    <EditableField label="Date" value={editableData?.date || ''} onChange={v => handleFieldChange('date', v)} placeholder="YYYY-MM-DD" />
+                </div>
+                <EditableField label="Prescriber" value={editableData?.doctorName || ''} onChange={v => handleFieldChange('doctorName', v)} />
+                
+                <div className="border-t border-slate-200 dark:border-slate-700 opacity-50 my-4" />
+                
+                <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Active Regimen</h3>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-white/5 px-3 py-1 rounded-full border border-slate-100 dark:border-white/5">
+                        {editableData?.medication.length} Agents Identified
+                    </div>
+                </div>
 
-              {editableData?.medication.map((med, i) => (
-                  <motion.div 
-                    key={i} 
-                    animate={{ borderColor: i === activeMedIndex ? 'var(--brand-blue)' : 'transparent' }} 
-                    className={`p-4 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border transition-all duration-300 ${i === activeMedIndex ? 'border-brand-blue ring-1 ring-brand-blue/20 shadow-lg' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'} space-y-3 relative overflow-hidden`}
-                  >
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${med.humanConfirmed ? 'bg-emerald-500' : (med.verification?.color === 'rose' ? 'bg-rose-500' : (med.verification?.color === 'amber' ? 'bg-amber-500' : 'bg-slate-300'))}`} />
-                      
-                      <div className="pl-2">
-                        <AutocompleteInput 
-                            label="Clinical Label" 
-                            value={med.name} 
-                            onChange={v => handleMedChange(i, 'name', v)} 
-                            fetchSuggestions={async (q) => { 
-                                const { getDrugSuggestions } = await import('../services/openFdaService.ts'); 
-                                const res = await getDrugSuggestions(q); 
-                                return res.map(r => r.standardName || r.brandName || r.genericName || ''); 
-                            }} 
-                            onFocus={() => setActiveMedIndex(i)} 
-                            onBlur={() => setActiveMedIndex(null)} 
-                            rightElement={
-                                <VerificationStatusBadge 
-                                    isReverifying={reverifyingIndex === i} 
-                                    result={med.verification} 
-                                    humanConfirmed={med.humanConfirmed}
-                                    onClick={() => { 
-                                        if (med.verification && med.verification.candidates.length > 0) { 
-                                            setResolutionTarget({ index: i, candidates: med.verification.candidates }); 
-                                        } else {
-                                            handleSignOff(i);
-                                        }
-                                    }} 
-                                />
-                            } 
-                        />
-                      </div>
+                {editableData?.medication.map((med, i) => (
+                    <motion.div 
+                        key={i} 
+                        animate={{ borderColor: i === activeMedIndex ? 'var(--brand-blue)' : 'transparent' }} 
+                        className={`p-4 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border transition-all duration-300 ${i === activeMedIndex ? 'border-brand-blue ring-1 ring-brand-blue/20 shadow-lg' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'} space-y-3 relative overflow-hidden`}
+                    >
+                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${med.humanConfirmed ? 'bg-emerald-500' : (med.verification?.color === 'rose' ? 'bg-rose-500' : (med.verification?.color === 'amber' ? 'bg-amber-500' : 'bg-slate-300'))}`} />
+                        
+                        <div className="pl-2">
+                            <AutocompleteInput 
+                                label="Clinical Label" 
+                                value={med.name} 
+                                onChange={v => handleMedChange(i, 'name', v)} 
+                                fetchSuggestions={async (q) => { 
+                                    const { getDrugSuggestions } = await import('../services/openFdaService.ts'); 
+                                    const res = await getDrugSuggestions(q); 
+                                    return res.map(r => r.standardName || r.brandName || r.genericName || ''); 
+                                }} 
+                                onFocus={() => setActiveMedIndex(i)} 
+                                onBlur={() => setActiveMedIndex(null)} 
+                                rightElement={
+                                    <VerificationStatusBadge 
+                                        isReverifying={reverifyingIndex === i} 
+                                        result={med.verification} 
+                                        humanConfirmed={med.humanConfirmed}
+                                        onClick={() => { 
+                                            const v = med.verification;
+                                            // CLINICAL REQUIREMENT: Gate candidates resolution to amber/rose with actionable data
+                                            if (v && (v.color === 'amber' || v.color === 'rose') && v.candidates?.length > 0) { 
+                                                triggerHaptic('medium');
+                                                setResolutionTarget({ index: i, candidates: v.candidates }); 
+                                            } else {
+                                                handleSignOff(i);
+                                            }
+                                        }} 
+                                    />
+                                } 
+                            />
+                        </div>
 
-                      <div className="grid grid-cols-3 gap-3 pl-2">
-                          <EditableField label="Strength" value={med.dosage} onChange={v => handleMedChange(i, 'dosage', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)} />
-                          <EditableField label="Freq" value={med.frequency} onChange={v => handleMedChange(i, 'frequency', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
-                          <EditableField label="Route" value={med.route || ''} onChange={v => handleMedChange(i, 'route', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
-                      </div>
+                        <div className="grid grid-cols-3 gap-3 pl-2">
+                            <EditableField label="Strength" value={med.dosage} onChange={v => handleMedChange(i, 'dosage', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)} />
+                            <EditableField label="Freq" value={med.frequency} onChange={v => handleMedChange(i, 'frequency', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
+                            <EditableField label="Route" value={med.route || ''} onChange={v => handleMedChange(i, 'route', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
+                        </div>
 
-                      {!med.humanConfirmed && (
-                          <div className="pl-2 mt-2">
-                              <button 
-                                onClick={() => handleSignOff(i)}
-                                className="w-full py-1.5 rounded-lg border border-brand-blue/20 bg-brand-blue/5 text-[10px] font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all"
-                              >
-                                  Sign-off Line {i + 1}
-                              </button>
-                          </div>
-                      )}
-                  </motion.div>
-              ))}
-          </div>
-      </div>
-  );
+                        {!med.humanConfirmed && (
+                            <div className="pl-2 mt-2">
+                                <button 
+                                    onClick={() => handleSignOff(i)}
+                                    className="w-full py-1.5 rounded-lg border border-brand-blue/20 bg-brand-blue/5 text-[10px] font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all"
+                                >
+                                    Sign-off Line {i + 1}
+                                </button>
+                            </div>
+                        )}
+                    </motion.div>
+                ))}
 
-  const renderActions = () => (
-    <div className="mt-auto p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-slate-800 z-20 flex gap-3 overflow-hidden shadow-[0_-5px_20px_rgba(0,0,0,0.1)] h-20">
-        {showConfetti && <Confetti />}
-        <motion.button whileTap={{ scale: 0.96 }} onClick={handleShare} disabled={isSharing} className="flex-[0.3] btn-secondary py-3 rounded-xl font-semibold flex items-center justify-center text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10"><ShareIcon className="w-5 h-5" /></motion.button>
-        <motion.button whileTap={{ scale: 0.96 }} onClick={handleSave} className="flex-1 btn-secondary py-3 rounded-xl font-semibold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10">Save Draft</motion.button>
-        <motion.button 
-            whileTap={{ scale: 0.96 }} 
-            onClick={handleVerifyClick} 
-            className="flex-1 btn-gradient text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 disabled:grayscale disabled:opacity-50"
-        >
-            <LockClosedIcon className="w-5 h-5"/> Final Sign-off
-        </motion.button>
-    </div>
-  );
+                <AnimatePresence>
+                    {hasAnySuggestions && showAiSuggestions && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="mt-8 p-6 rounded-[2rem] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 relative overflow-hidden shadow-sm"
+                        >
+                            <button 
+                                onClick={() => { triggerHaptic('light'); setShowAiSuggestions(false); }}
+                                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-slate-400"
+                                aria-label="Dismiss AI Insights"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">close</span>
+                            </button>
+
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="size-10 rounded-2xl bg-brand-blue/10 flex items-center justify-center text-brand-blue border border-brand-blue/10">
+                                    <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest leading-none">Safety Insights</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Clinical AI Recommendations</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {hasCritical && suggestions.criticalAlerts?.map((alert, i) => (
+                                    <motion.div 
+                                        key={`crit-${i}`} 
+                                        initial={{ x: -10, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        transition={{ delay: i * 0.1 }}
+                                        className="flex gap-4 p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20"
+                                    >
+                                        <span className="material-symbols-outlined text-rose-500 text-[20px] shrink-0">report</span>
+                                        <p className="text-xs font-bold text-rose-700 dark:text-rose-300 leading-relaxed">{alert}</p>
+                                    </motion.div>
+                                ))}
+                                
+                                {hasGeneral && suggestions.generalRecommendations?.map((rec, i) => (
+                                    <motion.div 
+                                        key={`rec-${i}`} 
+                                        initial={{ x: -10, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        transition={{ delay: (hasCritical ? suggestions.criticalAlerts!.length : 0 + i) * 0.1 }}
+                                        className="flex gap-4 p-4 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-100 dark:border-cyan-500/20"
+                                    >
+                                        <span className="material-symbols-outlined text-cyan-500 text-[20px] shrink-0">info</span>
+                                        <p className="text-xs font-bold text-cyan-700 dark:text-cyan-300 leading-relaxed">{rec}</p>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+      );
+  };
+
+  const renderActions = () => {
+    const unconfirmedCount = editableData?.medication.filter(m => !m.humanConfirmed).length || 0;
+    
+    return (
+        <div className="mt-auto p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-slate-800 z-20 flex gap-3 overflow-hidden shadow-[0_-5px_20px_rgba(0,0,0,0.1)] h-24">
+            {showConfetti && <Confetti />}
+            <motion.button whileTap={{ scale: 0.96 }} onClick={handleShare} disabled={isSharing} className="flex-[0.3] btn-secondary py-3 rounded-xl font-semibold flex items-center justify-center text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10"><ShareIcon className="w-5 h-5" /></motion.button>
+            <motion.button whileTap={{ scale: 0.96 }} onClick={handleSave} className="flex-1 btn-secondary py-3 rounded-xl font-semibold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10">Save Draft</motion.button>
+            <HoldToConfirmButton 
+                onConfirm={handleVerifyClick}
+                label={unconfirmedCount > 0 ? `Verify ${unconfirmedCount} more` : "Final Sign-off"}
+                confirmLabel="Verification Locked"
+                className={`flex-1 btn-gradient text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 disabled:grayscale disabled:opacity-50 ${unconfirmedCount > 0 ? 'opacity-50 grayscale' : ''}`}
+                icon={<LockClosedIcon className="w-5 h-5"/>}
+            />
+        </div>
+    );
+  };
 
   if (!editableData) return <Spinner />;
 

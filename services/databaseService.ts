@@ -13,7 +13,9 @@ const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
  * If user is guest: saves to Local DB.
  */
 export const savePrescription = async (data: PrescriptionData): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  // Use getSession for broader compatibility as per engineering requirement
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     console.log("User not logged in, saving to local DB");
@@ -64,7 +66,8 @@ export const savePrescription = async (data: PrescriptionData): Promise<void> =>
  * If user is guest: fetches from Local DB.
  */
 export const getAllPrescriptions = async (): Promise<PrescriptionData[]> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     return await localDB.getFromLocalDB();
@@ -100,7 +103,8 @@ export const getAllPrescriptions = async (): Promise<PrescriptionData[]> => {
  * If user is guest: deletes from Local DB.
  */
 export const deletePrescription = async (id: string): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     await localDB.deleteFromLocalDB(id);

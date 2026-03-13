@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { GoogleIcon } from './icons/GoogleIcon.tsx';
 import BrandLogo from './BrandLogo.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Spinner } from './Spinner.tsx';
-import { supabase } from '../lib/supabaseClient.ts';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.ts';
 
 interface LoginModalProps {
   onLogin: (user: { name: string; email: string }) => void;
@@ -12,7 +13,6 @@ interface LoginModalProps {
 
 export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
   const [view, setView] = useState<'login' | 'signup' | 'forgot'>('login');
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -20,25 +20,38 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
+  const isConfigured = isSupabaseConfigured();
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
     
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // ARCHITECTURAL FIX: Allow attempt even if misconfigured to provide real network feedback
+    if (!isConfigured) {
+      console.warn("Login attempt in unconfigured environment.");
+    }
+    
+    setLoading(true);
+    try {
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-    setLoading(false);
-
-    if (error) {
-      setError(error.message);
-    } else if (data.user) {
-      onLogin({ 
-        name: data.user.user_metadata?.full_name || email.split('@')[0], 
-        email: data.user.email || '' 
-      });
+        if (authError) {
+          setError(authError.message === 'Database error saving new user' 
+            ? "Clinical Node Error: Storage keys are invalid or misconfigured."
+            : authError.message);
+        } else if (data.user) {
+          onLogin({ 
+            name: data.user.user_metadata?.full_name || email.split('@')[0], 
+            email: data.user.email || '' 
+          });
+        }
+    } catch (e) {
+        setError("Network Error: Could not connect to the clinical authentication node.");
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -47,41 +60,45 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
     setError('');
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName },
         },
-      },
-    });
+      });
 
-    setLoading(false);
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setMessage('Registration successful! Please check your email to confirm your account.');
-      setView('login');
+      if (signUpError) {
+        setError(signUpError.message);
+      } else {
+        setMessage('Registration successful! Please check your email to confirm your account.');
+        setView('login');
+      }
+    } catch (err) {
+      setError("Infrastructure Error: Cloud registration is unavailable.");
+    } finally {
+      setLoading(false);
     }
   };
   
   const handleResetSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!email) return;
-      
       setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
-      });
-      setLoading(false);
-
-      if (error) {
-        setError(error.message);
-      } else {
-        setMessage('Check your email for the password reset link.');
-        setView('login');
+      try {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        });
+        if (resetError) {
+          setError(resetError.message);
+        } else {
+          setMessage('Check your email for the password reset link.');
+          setView('login');
+        }
+      } catch (err) {
+        setError("Reset service unavailable.");
+      } finally {
+        setLoading(false);
       }
   };
 
@@ -101,127 +118,122 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
         className="bg-light-panel dark:bg-dark-panel w-full max-w-md m-4 rounded-2xl shadow-2xl p-8 border border-light-border dark:border-dark-border overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <BrandLogo variant="full" className="mx-auto mb-6" />
+        <div className="flex justify-between items-start mb-6">
+            <BrandLogo variant="header" className="origin-left" />
+            <button onClick={onClose} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-slate-400">&times;</button>
+        </div>
         
         <AnimatePresence mode="wait">
             {view === 'login' && (
-                <motion.div
-                    key="login"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -20, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                >
+                <motion.div key="login" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
                     <div className="text-center">
-                        <h2 className="text-2xl font-black text-light-text dark:text-dark-text tracking-tight">Welcome Back</h2>
-                        <p className="text-sm text-light-text-mid dark:text-dark-text-mid mt-1">Please log in to access your dashboard.</p>
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Professional Portal</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Authorized clinical access required.</p>
                     </div>
+
+                    {!isConfigured && (
+                        <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
+                            <span className="material-symbols-outlined text-amber-600 text-lg">cloud_off</span>
+                            <div>
+                                <p className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest leading-none">Clinical Node Discovery</p>
+                                <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-1 font-medium italic">Standard environment detected. Cloud sync features may be limited.</p>
+                            </div>
+                        </div>
+                    )}
                     
                     <form onSubmit={handleLogin} className="mt-8 space-y-4">
-                        {message && <p className="text-green-500 text-sm text-center bg-green-500/10 p-2 rounded">{message}</p>}
-                        {error && <p className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded">{error}</p>}
+                        {message && <p className="text-green-500 text-xs font-bold text-center bg-green-500/10 p-2 rounded">{message}</p>}
+                        {error && <p className="text-red-500 text-xs font-bold text-center bg-red-500/10 p-2 rounded">{error}</p>}
                         
                         <div>
-                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Email</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Medical Email</label>
                             <input 
                                 type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                                className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                 placeholder="clinician@hospital.com"
                             />
                         </div>
                         <div>
                             <div className="flex justify-between items-center">
-                                <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Password</label>
-                                <button type="button" onClick={() => setView('forgot')} className="text-xs text-primary font-bold hover:underline">Forgot?</button>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Security PIN</label>
+                                <button type="button" onClick={() => setView('forgot')} className="text-[10px] text-primary font-black uppercase tracking-widest hover:underline">Reset</button>
                             </div>
                             <input 
                                 type="password" required value={password} onChange={e => setPassword(e.target.value)}
-                                className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                 placeholder="••••••••"
                             />
                         </div>
                         
                         <motion.button whileTap={{ scale: 0.96 }} type="submit" disabled={loading}
-                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3.5 text-base font-bold rounded-xl shadow-lg disabled:opacity-70 mt-4">
-                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Sign In to Portal'}
+                            className="w-full btn-gradient-cta inline-flex items-center justify-center px-8 py-4 text-sm font-black rounded-xl shadow-lg disabled:opacity-70 mt-4 uppercase tracking-widest">
+                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Enter Clinical Workspace'}
                         </motion.button>
 
-                        <div className="text-center text-sm mt-6">
-                            <span className="text-gray-500 font-medium">New to MediVision? </span>
-                            <button type="button" onClick={() => setView('signup')} className="text-primary font-black hover:underline uppercase tracking-widest text-xs ml-1">Create Account</button>
+                        <div className="text-center mt-6">
+                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">New Clinician? </span>
+                            <button type="button" onClick={() => setView('signup')} className="text-primary font-black hover:underline uppercase tracking-widest text-[10px] ml-1">Create ID</button>
                         </div>
                     </form>
                 </motion.div>
             )}
 
             {view === 'signup' && (
-                <motion.div
-                    key="signup"
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: 20, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                >
+                <motion.div key="signup" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }}>
                     <div className="text-center">
-                        <h2 className="text-2xl font-black text-light-text dark:text-dark-text tracking-tight">Join MediVision</h2>
-                        <p className="text-sm text-light-text-mid dark:text-dark-text-mid mt-1">Configure your clinical workspace.</p>
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Registration</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Configure your clinical identity.</p>
                     </div>
                     
                     <form onSubmit={handleSignUp} className="mt-6 space-y-4">
-                        {error && <p className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded">{error}</p>}
+                        {error && <p className="text-red-500 text-xs font-bold text-center bg-red-500/10 p-2 rounded">{error}</p>}
                         
                         <div>
-                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Full Name</label>
-                            <input type="text" required value={fullName} onChange={e => setFullName(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Dr. John Doe" />
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Legal Name</label>
+                            <input type="text" required value={fullName} onChange={e => setFullName(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Dr. Jane Smith" />
                         </div>
                         <div>
-                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Email</label>
-                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="name@clinic.com" />
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address</label>
+                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="name@clinic.com" />
                         </div>
                         <div>
-                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Password</label>
-                            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="••••••••" />
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Workspace Password</label>
+                            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="••••••••" />
                         </div>
                         
                         <motion.button whileTap={{ scale: 0.96 }} type="submit" disabled={loading}
-                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3.5 text-base font-bold rounded-xl shadow-lg disabled:opacity-70 mt-4">
-                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Create Account'}
+                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-4 text-sm font-black rounded-xl shadow-lg disabled:opacity-70 mt-4 uppercase tracking-widest">
+                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Request Clinical Account'}
                         </motion.button>
 
-                        <div className="text-center text-sm mt-6">
-                            <span className="text-gray-500 font-medium">Already have an account? </span>
-                            <button type="button" onClick={() => setView('login')} className="text-primary font-black hover:underline uppercase tracking-widest text-xs ml-1">Login</button>
+                        <div className="text-center mt-6">
+                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Already have an ID? </span>
+                            <button type="button" onClick={() => setView('login')} className="text-primary font-black hover:underline uppercase tracking-widest text-[10px] ml-1">Login</button>
                         </div>
                     </form>
                 </motion.div>
             )}
 
             {view === 'forgot' && (
-                <motion.div
-                    key="forgot"
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: 20, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                >
-                     <div className="text-center">
-                        <h2 className="text-2xl font-black text-light-text dark:text-dark-text tracking-tight">Reset Password</h2>
-                        <p className="text-sm text-gray-500 mt-1">We'll email you a recovery link.</p>
+                <motion.div key="forgot" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }}>
+                    <div className="text-center">
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Security Reset</h2>
+                        <p className="text-sm text-slate-500 mt-1">Verification link will be dispatched.</p>
                     </div>
 
                     <form onSubmit={handleResetSubmit} className="mt-8 space-y-6">
-                         <div>
-                            <label className="text-xs font-black uppercase tracking-widest text-light-text-mid dark:text-dark-text-mid ml-1">Email Address</label>
-                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="clinician@hospital.com" />
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Registered Email</label>
+                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="clinician@hospital.com" />
                         </div>
                         
                         <motion.button whileTap={{ scale: 0.96 }} type="submit" disabled={loading}
-                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-3.5 text-base font-bold rounded-xl shadow-lg disabled:opacity-70">
-                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Send Reset Link'}
+                            className="w-full btn-gradient inline-flex items-center justify-center px-8 py-4 text-sm font-black rounded-xl shadow-lg disabled:opacity-70 uppercase tracking-widest">
+                            {loading ? <Spinner className="w-5 h-5 text-white" /> : 'Dispatch Reset Email'}
                         </motion.button>
                         
-                        <button type="button" onClick={() => setView('login')} className="w-full text-xs font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-colors text-center">
-                            Back to Login
+                        <button type="button" onClick={() => setView('login')} className="w-full text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-colors text-center">
+                            Back to Entrance
                         </button>
                     </form>
                 </motion.div>

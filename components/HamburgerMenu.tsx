@@ -193,6 +193,17 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
         setTheme(selectedTheme);
         showToast(`Theme changed to ${selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)}`, 'success');
     };
+
+    // Phase 4: Forced purge of clinical session
+    const handleClearSession = async () => {
+        if (window.confirm("CRITICAL: This will purge all clinical data, IndexedDB records, and local caches for the next user. Proceed?")) {
+            triggerHaptic('heavy');
+            localStorage.clear();
+            const dbs = await window.indexedDB.databases();
+            dbs.forEach(db => { if (db.name) window.indexedDB.deleteDatabase(db.name); });
+            window.location.href = '/';
+        }
+    };
     
     const themeOptions: { value: Theme, label: string, icon: React.FC<any> }[] = [
         { value: 'light', label: 'Light', icon: SunIcon },
@@ -225,7 +236,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
                 ) : (
                     <div className="text-center">
                         <p className="font-bold text-lg text-gray-900 dark:text-white">Guest Session</p>
-                        <p className="text-xs text-orange-500 font-bold uppercase tracking-widest mt-1">Temporary Storage Active</p>
+                        <p className="text-[10px] text-amber-600 font-black uppercase tracking-[0.2em] mt-2 bg-amber-500/10 px-4 py-1.5 rounded-full">Local Storage Active</p>
                     </div>
                 )}
             </div>
@@ -234,13 +245,21 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
                 <MenuButton icon={SettingsIcon} label="Interface Settings" onClick={() => setActiveSection('settings')} />
                 <MenuButton icon={QuestionMarkCircleIcon} label="Help & Clinical FAQ" onClick={() => setActiveSection('help')} />
                 
-                {isLoggedIn ? (
-                    <div className="pt-2 mt-2 border-t border-light-border dark:border-dark-border">
-                        <motion.button whileTap={{ scale: 0.98 }} onClick={onLogout} className="w-full text-left px-4 py-3 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors font-medium">
+                <div className="pt-2 mt-2 border-t border-light-border dark:border-dark-border">
+                    <button 
+                        onClick={handleClearSession}
+                        className="w-full text-left px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors font-bold text-sm uppercase tracking-widest flex items-center gap-3"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">cleaning_services</span>
+                        Clear Local Session
+                    </button>
+                    {isLoggedIn && (
+                        <motion.button whileTap={{ scale: 0.98 }} onClick={onLogout} className="w-full text-left px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-500/10 transition-colors font-medium">
                             Sign Out
                         </motion.button>
-                    </div>
-                ) : (
+                    )}
+                </div>
+                {!isLoggedIn && (
                     <div className="p-4">
                         <motion.button whileTap={{ scale: 0.96 }} onClick={onLogin} className="w-full btn-gradient text-white flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold shadow-lg">
                             <GoogleIcon /> Upgrade to Professional

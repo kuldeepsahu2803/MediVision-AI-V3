@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnalyzeView } from './components/AnalyzeView.tsx';
 import { ReviewView } from './components/ReviewView.tsx';
@@ -34,7 +35,7 @@ const App: React.FC = () => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [showTreatments, setShowTreatments] = useState(true);
 
-  const { user, isLoggedIn, login, logout, loading: authLoading } = useAuthSession();
+  const { user, isLoggedIn, logout, loading: authLoading, cloudStatus } = useAuthSession();
   const medicalHistory = useMedicalHistory();
   const analysisEngine = useAnalysisEngine(isLoggedIn);
   const { triggerHaptic } = useHaptic();
@@ -77,8 +78,13 @@ const App: React.FC = () => {
     if (role === 'guest') {
         navigateToView(AppView.SERVICES);
     } else if (role === 'professional') {
-        if (isLoggedIn) navigateToView(AppView.SERVICES);
-        else setShowLoginModal(true);
+        if (isLoggedIn) {
+            navigateToView(AppView.SERVICES);
+        } else {
+            // FAIL-OPEN ARCHITECTURE: Always show login. 
+            // The modal handles environmental hints contextually.
+            setShowLoginModal(true);
+        }
     }
   };
   
@@ -89,7 +95,15 @@ const App: React.FC = () => {
       case AppTab.REVIEW:
         return <ReviewView prescription={prescriptionData} imageUrls={imageUrls.length > 0 ? imageUrls : null} onSave={handleSaveReview} onVerify={handleVerify} />;
       case AppTab.REPORTS:
-        return <ReportsView history={displayHistory} isLoading={isLoadingHistory} onSelectPrescription={(p) => { setPrescriptionData(p); navigateToTab(AppTab.REVIEW, TransitionMode.DRILL); }} onDeleteReport={handleDeleteReport} />;
+        return (
+          <ReportsView 
+            history={displayHistory} 
+            isLoading={isLoadingHistory} 
+            onSelectPrescription={(p) => { setPrescriptionData(p); navigateToTab(AppTab.REVIEW, TransitionMode.DRILL); }} 
+            onDeleteReport={handleDeleteReport} 
+            onNavigateToAnalyze={() => navigateToTab(AppTab.ANALYZE, TransitionMode.TAB)}
+          />
+        );
       case AppTab.TREATMENTS:
         return <TreatmentsView prescription={prescriptionData} />;
       case AppTab.SETTINGS:
@@ -135,7 +149,10 @@ const App: React.FC = () => {
               setUserRole('professional');
               navigateToView(AppView.SERVICES);
             }} 
-            onClose={() => setShowLoginModal(false)} 
+            onClose={() => {
+              setShowLoginModal(false);
+              if (!isLoggedIn) setUserRole(null);
+            }} 
           />
         )}
       </AnimatePresence>
@@ -168,6 +185,7 @@ const App: React.FC = () => {
                       onLogout={handleLogout} 
                       onLogoClick={() => navigateToView(AppView.SERVICES)} 
                       triggerHaptic={triggerHaptic}
+                      cloudStatus={cloudStatus}
                     >
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-grow w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
                             <AnimatePresence mode="wait">

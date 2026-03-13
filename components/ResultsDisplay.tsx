@@ -56,18 +56,42 @@ const MedicationTable: React.FC<{ medicines: Medicine[] }> = ({ medicines }) => 
                 Dosage
               </th>
               <th scope="col" className="px-4 py-2 text-left text-xs font-bold text-light-text-mid dark:text-dark-text-mid uppercase tracking-wider">
-                Frequency
+                Status
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-light-border dark:divide-dark-border">
-            {medicines.map((med, index) => (
-              <tr key={index} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200">
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-light-text dark:text-dark-text">{med.name || '-'}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-light-text-mid dark:text-dark-text-mid">{med.dosage || '-'}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-light-text-mid dark:text-dark-text-mid">{med.frequency || '-'}</td>
-              </tr>
-            ))}
+            {medicines.map((med, index) => {
+              const statusColor = med.verification?.color === 'emerald' ? 'text-emerald-600 dark:text-emerald-400' : 
+                                 med.verification?.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 
+                                 med.verification?.color === 'rose' ? 'text-rose-600 dark:text-rose-400' : 
+                                 'text-slate-500';
+              
+              const statusIcon = med.verification?.color === 'emerald' ? 'check_circle' : 
+                                med.verification?.color === 'amber' ? 'info' : 
+                                med.verification?.color === 'rose' ? 'warning' : 
+                                'help';
+
+              return (
+                <tr key={index} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200">
+                  <td className="px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text">
+                    <div className="flex flex-col">
+                      <span>{med.verification?.normalizedName || med.name || '-'}</span>
+                      {med.verification?.normalizedName && med.verification.normalizedName !== med.name && (
+                        <span className="text-[10px] text-slate-400 italic">Original: {med.name}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-light-text-mid dark:text-dark-text-mid">{med.dosage || '-'}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                    <div className={`flex items-center gap-1.5 font-bold uppercase tracking-tighter text-[10px] ${statusColor}`}>
+                      <span className="material-symbols-outlined text-[14px]">{statusIcon}</span>
+                      {med.verification?.status?.replace('_', ' ') || 'Unverified'}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

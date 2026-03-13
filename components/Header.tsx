@@ -8,6 +8,7 @@ import { SettingsIcon } from './icons/SettingsIcon.tsx';
 import BrandLogo from './BrandLogo.tsx';
 import { motion } from 'framer-motion';
 import { AppTab } from '../constants/navigation.ts';
+import { Cloud, CloudOff, AlertCircle } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: AppTab;
@@ -18,6 +19,7 @@ interface HeaderProps {
   hasData: boolean;
   showTreatments: boolean;
   onLogoClick?: () => void;
+  cloudStatus: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -28,7 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
   isGuest,
   hasData,
   showTreatments, 
-  onLogoClick 
+  onLogoClick,
+  cloudStatus
 }) => {
   const navLinks: { id: AppTab; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>>; color: string; bg: string }[] = [
     { id: AppTab.ANALYZE, label: 'Analyze', icon: AnalyzeIcon, color: 'text-primary', bg: 'bg-primary/5' },
@@ -40,13 +43,31 @@ export const Header: React.FC<HeaderProps> = ({
 
   const availableNavLinks = showTreatments ? navLinks : navLinks.filter(l => l.id !== AppTab.TREATMENTS);
 
+  const renderCloudStatus = () => {
+    switch (cloudStatus) {
+      case 'ENABLED':
+        return <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"><Cloud className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest">Online</span></div>;
+      case 'LOCAL_ONLY':
+        return <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"><CloudOff className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest">Local Only</span></div>;
+      case 'DEGRADED':
+        return <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"><AlertCircle className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest">Degraded</span></div>;
+      default:
+        return <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20 animate-pulse"><Cloud className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest">Syncing</span></div>;
+    }
+  };
+
   return (
     <header className="relative w-full z-40 transition-all duration-300">
       <div className="absolute inset-0 bg-white/95 dark:bg-black/90 border-b border-light-border dark:border-dark-border shadow-sm backdrop-blur-xl" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 sm:h-24 flex items-center justify-between">
-          <div className="flex items-center cursor-pointer group" onClick={onLogoClick}>
-            <BrandLogo variant="header" className="transform group-hover:scale-105 transition-transform" />
+          <div className="flex items-center gap-4">
+            <div className="cursor-pointer group" onClick={onLogoClick}>
+              <BrandLogo variant="header" className="transform group-hover:scale-105 transition-transform" />
+            </div>
+            <div className="hidden sm:block">
+              {renderCloudStatus()}
+            </div>
           </div>
           
           <div className="hidden md:flex items-center gap-1.5 bg-slate-100/50 dark:bg-white/5 p-1.5 rounded-full border border-slate-200 dark:border-white/5 backdrop-blur-md">

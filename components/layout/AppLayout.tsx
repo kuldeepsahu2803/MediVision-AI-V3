@@ -23,6 +23,7 @@ interface AppLayoutProps {
   onLogout: () => void;
   onLogoClick: () => void;
   triggerHaptic: (type: any) => void;
+  cloudStatus: string;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
@@ -42,7 +43,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   showToast,
   onLogout,
   onLogoClick,
-  triggerHaptic
+  triggerHaptic,
+  cloudStatus
 }) => {
   return (
     <div className="flex flex-col min-h-screen w-full relative bg-light-bg dark:bg-dark-bg text-slate-900 dark:text-slate-100 overflow-y-auto overflow-x-hidden">
@@ -61,6 +63,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           hasData={hasData}
           showTreatments={showTreatments} 
           onLogoClick={onLogoClick}
+          cloudStatus={cloudStatus}
         />
       </div>
 

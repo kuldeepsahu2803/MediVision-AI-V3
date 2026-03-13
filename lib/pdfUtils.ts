@@ -248,7 +248,7 @@ const generateDoc = async (report: PrescriptionData): Promise<any> => {
     doc.text("Clinical Verification Node #204", pageWidth - margin - 20, currentY + 58, { align: 'right' });
 
     // --- 6. Final Page Stamper (Footers) ---
-    const totalPages = doc.internal.getNumberOfPages();
+    const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setDrawColor(...THEME.colors.border);

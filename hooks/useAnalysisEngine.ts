@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { PrescriptionData } from '../types.ts';
 import { analyzePrescription } from '../services/geminiService.ts';
 import { preprocessImageForOCR } from '../lib/imageProcessing.ts';
+import { verifyPrescriptionMeds } from '../services/medicationVerifier.ts';
 
 export const useAnalysisEngine = (isLoggedIn: boolean) => {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -67,11 +68,17 @@ export const useAnalysisEngine = (isLoggedIn: boolean) => {
         return { base64Data, mimeType: imageFiles[index].type || 'image/jpeg' };
       });
       
-      // 2. Call Gemini
+      // 2. Call Gemini for initial extraction
       const result = await analyzePrescription(imagesPayload);
+      
+      // 3. Clinical Verification Step (RxNorm)
+      // We use the first image as context for re-reading if needed
+      const firstImageBase64 = processedBase64s[0]?.split(',')[1];
+      const verifiedMeds = await verifyPrescriptionMeds(result.medication, firstImageBase64);
       
       const dataWithId: PrescriptionData = { 
         ...result, 
+        medication: verifiedMeds,
         id: `rx-${Date.now()}`, 
         status: 'AI-Extracted' as const,
         imageQuality: 'Good',
