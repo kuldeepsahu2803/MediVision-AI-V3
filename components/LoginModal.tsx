@@ -127,16 +127,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
             {view === 'login' && (
                 <motion.div key="login" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
                     <div className="text-center">
-                        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Professional Portal</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Authorized clinical access required.</p>
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Clinical Portal</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Authorized medical access required.</p>
                     </div>
 
                     {!isConfigured && (
-                        <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
-                            <span className="material-symbols-outlined text-amber-600 text-lg">cloud_off</span>
+                        <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-start gap-3">
+                            <span className="material-symbols-outlined text-emerald-600 text-lg">clinical_notes</span>
                             <div>
-                                <p className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest leading-none">Clinical Node Discovery</p>
-                                <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-1 font-medium italic">Standard environment detected. Cloud sync features may be limited.</p>
+                                <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest leading-none">Clinical Node Discovery</p>
+                                <p className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-1 font-medium italic">Standard environment detected. Cloud sync features may be limited.</p>
                             </div>
                         </div>
                     )}

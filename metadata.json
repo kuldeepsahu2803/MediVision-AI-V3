@@ -1,6 +1,6 @@
 {
-  "name": "MediVision AI",
-  "description": "An AI-powered platform to scan, analyze, and manage medical prescriptions using advanced image analysis.",
+  "name": "RxSnap",
+  "description": "A clinically-validated decision support platform for prescription analysis and medication management.",
   "requestFramePermissions": [
     "camera"
   ],

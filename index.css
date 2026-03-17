@@ -10,9 +10,9 @@
   --color-primary: #00BCD4;
   --color-primary-dark: #008ba3;
   --color-primary-light: #e0f7fa;
-  --color-secondary: #E91E63;
-  --color-secondary-dark: #ad1457;
-  --color-secondary-light: #fce4ec;
+  --color-secondary: #10b981;
+  --color-secondary-dark: #059669;
+  --color-secondary-light: #ecfdf5;
   --color-light-bg: #F9FAFB;
   --color-light-panel: rgba(255, 255, 255, 0.75);
   --color-light-text: #1A2B48;
@@ -23,7 +23,7 @@
   --color-dark-border: rgba(255, 255, 255, 0.12);
 
   --shadow-glow: 0 0 20px rgba(0, 188, 212, 0.3);
-  --shadow-glow-rose: 0 0 20px rgba(233, 30, 99, 0.3);
+  --shadow-glow-emerald: 0 0 20px rgba(16, 185, 129, 0.3);
   --shadow-glass: 0 8px 32px 0 rgba(0, 188, 212, 0.1);
 }
 

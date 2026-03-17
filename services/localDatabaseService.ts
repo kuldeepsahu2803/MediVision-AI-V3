@@ -2,7 +2,7 @@
 import { openDB, IDBPDatabase } from 'idb';
 import { PrescriptionData } from '../types.ts';
 
-const DB_NAME = 'MediVisionDB';
+const DB_NAME = 'RxSnapDB';
 const STORE_NAME = 'prescriptions';
 
 export const initLocalDB = async (): Promise<IDBPDatabase> => {

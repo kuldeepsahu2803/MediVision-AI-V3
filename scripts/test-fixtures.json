@@ -1,0 +1,29 @@
+[
+  {
+    "id": "test-report-001",
+    "patientName": "John Doe",
+    "patientAge": "45",
+    "doctorName": "Dr. Smith",
+    "date": "2026-03-15",
+    "medication": [
+      {
+        "name": "Amoxicillin",
+        "dosage": "500mg",
+        "frequency": "TID",
+        "duration": "7 days",
+        "humanConfirmed": true,
+        "verification": {
+          "normalizedName": "Amoxicillin 500mg Oral Capsule",
+          "confidenceScore": 0.95
+        }
+      },
+      {
+        "name": "Legacy Med",
+        "dosage": "1/2 tablet",
+        "frequency": "Daily",
+        "humanConfirmed": false
+      }
+    ],
+    "status": "AI-Extracted"
+  }
+]

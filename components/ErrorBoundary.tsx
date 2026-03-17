@@ -30,7 +30,7 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
-    if (error.message.includes('jsPDF') || error.message.includes('PubSub')) {
+    if (error.message?.includes('jsPDF') || error.message?.includes('PubSub')) {
       console.error('PDF Generation Error Caught by Boundary:', error, errorInfo);
     }
   }

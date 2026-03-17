@@ -56,7 +56,7 @@ async function startServer() {
   }
 
   app.listen(port, '0.0.0.0', () => {
-    console.log(`MediVision Backend active on port ${port}`);
+    console.log(`RxSnap Backend active on port ${port}`);
   });
 }
 

@@ -12,15 +12,62 @@ const FORM_TERMS = ['TAB', 'TABLET', 'CAP', 'CAPSULE', 'INJ', 'INJECTION', 'SYP'
 const ROUTE_TERMS = ['ORAL', 'TOPICAL', 'IV', 'IM', 'SC', 'PO', 'SUBCUTANEOUS', 'INTRAVENOUS', 'INTRAMUSCULAR'];
 const CLINICAL_SUFFIXES = ['HCL', 'IP', 'USP', 'BP', 'EP', 'PH.EUR', 'ANHYDROUS'];
 
+const ABBREVIATION_MAP: Record<string, string> = {
+  'LIQ': 'LIQUOR',
+  'AC': 'ACID',
+  'AQ': 'AQUA',
+  'DIL': 'DILUTED',
+  'HYD': 'HYDRO',
+  'NIT': 'NITRIC',
+  'STRYCH': 'STRYCHNINE',
+  'CHLORF': 'CHLOROFORM',
+  'EXT': 'EXTRACT',
+  'TINCT': 'TINCTURE',
+  'TR': 'TINCTURE',
+  'MIST': 'MIXTURE',
+  'PIL': 'PILL',
+  'PULV': 'POWDER',
+  'UNG': 'UNGUENTUM',
+  'LOT': 'LOTION',
+  'LIN': 'LINIMENT',
+  'GUTT': 'GUTTAE',
+  'SYR': 'SYRUP',
+  'HCL': 'HYDROCHLORIDE',
+  'SULPH': 'SULFATE',
+  'SULF': 'SULFATE',
+  'SOD': 'SODIUM',
+  'POT': 'POTASSIUM',
+  'MAG': 'MAGNESIUM',
+  'CALC': 'CALCIUM',
+  'FERR': 'FERROUS',
+  'AMMON': 'AMMONIUM',
+  'SPIR': 'SPIRIT',
+  'VIN': 'VINUM',
+  'INF': 'INFUSION',
+  'DECOCT': 'DECOCTION',
+  'ENEM': 'ENEMA',
+  'SUPP': 'SUPPOSITORY',
+  'VAG': 'VAGINAL',
+  'RECT': 'RECTAL',
+  'TOP': 'TOPICAL',
+  'OPH': 'OPHTHALMIC',
+  'OTIC': 'OTIC'
+};
+
 export const normalizeMedicationName = (rawName: string, level: 'strict' | 'relaxed' = 'strict'): string => {
   if (!rawName) return '';
 
   let normalized = rawName.toUpperCase();
 
-  // 1. Remove common separators
-  normalized = normalized.replace(/[-–—,]/g, ' ');
+  // 1. Remove common separators and dots (common in abbreviations)
+  normalized = normalized.replace(/[-–—,.]/g, ' ');
 
-  // 2. Remove numeric strengths if they accidentally leaked into the name field
+  // 2. Expand Abbreviations
+  const words = normalized.split(/\s+/);
+  const expandedWords = words.map(word => ABBREVIATION_MAP[word] || word);
+  normalized = expandedWords.join(' ');
+
+  // 3. Remove numeric strengths if they accidentally leaked into the name field
   normalized = normalized.replace(/\d+\s*(MG|MCG|G|ML|IU|%|PERCENT|MILLIGRAM|MICROGRAM)?/g, '');
 
   // 3. Remove Form Terms

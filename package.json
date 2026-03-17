@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:pdf": "tsx scripts/validate-pdf.ts",
+    "test:pdf:visual": "tsx scripts/visual-regression.ts"
   },
   "engines": {
     "node": "20.x"
@@ -17,20 +19,26 @@
     "@google/genai": "^1.7.0",
     "@supabase/supabase-js": "^2.39.0",
     "@tailwindcss/vite": "^4.2.1",
+    "@types/jsdom": "^28.0.0",
+    "@types/pdf-parse": "^1.1.5",
     "autoprefixer": "^10.4.27",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "framer-motion": "^11.15.0",
     "idb": "^8.0.0",
+    "jsdom": "^29.0.0",
     "jspdf": "^3.0.2",
     "jspdf-autotable": "^5.0.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.577.0",
+    "pdf-parse": "^2.4.5",
+    "pixelmatch": "^7.1.0",
     "postcss": "^8.5.8",
     "qrcode": "^1.5.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-easy-crop": "^5.2.0",
+    "skia-canvas": "^3.0.8",
     "tailwindcss": "^4.2.1",
     "tsx": "^4.21.0"
   },

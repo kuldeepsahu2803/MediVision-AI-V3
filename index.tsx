@@ -11,6 +11,14 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+
+// Silence benign Vite HMR WebSocket errors in the preview environment
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason?.message?.includes('WebSocket') || event.reason === 'WebSocket closed without opened.') {
+    event.preventDefault();
+  }
+});
+
 root.render(
   <React.StrictMode>
     <ErrorBoundary>

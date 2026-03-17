@@ -212,7 +212,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
     ];
     
     const faqs = [
-        { q: "How accurate is the analysis?", a: "MediVision AI achieves 99.8% extraction accuracy, but human review is mandatory for all clinical decisions." },
+        { q: "How accurate is the analysis?", a: "RxSnap achieves 99.8% extraction accuracy, but human review is mandatory for all clinical decisions." },
         { q: "Is my data secure?", a: "Images are processed securely. Guests store data on device (IndexedDB); Professionals store encrypted data in Supabase Cloud." },
         { q: "What do the badge colors mean?", a: "Green means a definitive RxNorm match. Yellow suggests spelling review. Red indicates a strength mismatch for the ingredient." }
     ];
@@ -325,7 +325,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
             </div>
             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">
                 <p className="text-xs text-blue-700 dark:text-blue-300 font-medium leading-relaxed">
-                    Need technical assistance? Our medical ops team is available at <span className="font-bold">support@medivision.ai</span>
+                    Need technical assistance? Our medical ops team is available at <span className="font-bold">support@rxsnap.ai</span>
                 </p>
             </div>
         </div>

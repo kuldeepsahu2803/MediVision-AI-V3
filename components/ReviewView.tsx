@@ -422,7 +422,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
           if (navigator.share) {
               const { getPDFFile } = await import('../lib/pdfUtils.ts');
               const file = await getPDFFile(editableData);
-              const shareData = { files: [file], title: `Prescription Report - ${editableData.patientName}`, text: `MediVision Analysis Report for ${editableData.patientName}.` };
+              const shareData = { files: [file], title: `Prescription Report - ${editableData.patientName}`, text: `RxSnap Analysis Report for ${editableData.patientName}.` };
               if (navigator.canShare && navigator.canShare(shareData)) {
                   await navigator.share(shareData);
               } else {
@@ -528,11 +528,11 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                 </div>
 
                 {editableData?.medication.map((med, i) => (
-                    <motion.div 
-                        key={i} 
-                        animate={{ borderColor: i === activeMedIndex ? 'var(--brand-blue)' : 'transparent' }} 
-                        className={`p-4 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border transition-all duration-300 ${i === activeMedIndex ? 'border-brand-blue ring-1 ring-brand-blue/20 shadow-lg' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'} space-y-3 relative overflow-hidden`}
-                    >
+                <motion.div 
+                    key={i} 
+                    animate={{ borderColor: i === activeMedIndex ? '#007ACC' : 'rgba(0, 122, 204, 0)' }} 
+                    className={`p-4 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border transition-all duration-300 ${i === activeMedIndex ? 'border-brand-blue ring-1 ring-brand-blue/20 shadow-lg' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'} space-y-3 relative overflow-hidden`}
+                >
                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${med.humanConfirmed ? 'bg-emerald-500' : (med.verification?.color === 'rose' ? 'bg-rose-500' : (med.verification?.color === 'amber' ? 'bg-amber-500' : 'bg-slate-300'))}`} />
                         
                         <div className="pl-2">

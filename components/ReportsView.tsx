@@ -74,7 +74,7 @@ const TimelineItem: React.FC<{
     const x = useMotionValue(0);
     const deleteOpacity = useTransform(x, [-100, -20], [1, 0]);
 
-    const hasFullTimestamp = report.timestamp && report.timestamp.includes('T');
+    const hasFullTimestamp = report.timestamp?.includes('T');
     const timeString = hasFullTimestamp 
         ? new Date(report.timestamp!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : 'Analysis Active';

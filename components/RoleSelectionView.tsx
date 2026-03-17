@@ -53,7 +53,7 @@ export const RoleSelectionView: React.FC<RoleSelectionViewProps> = ({ onSelectRo
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-100 dark:border-cyan-800/30 shadow-sm"
           >
-            <span className="text-xs sm:text-sm font-black uppercase tracking-[0.25em] text-cyan-600 dark:text-cyan-400">Welcome to MediVision AI</span>
+            <span className="text-xs sm:text-sm font-black uppercase tracking-[0.25em] text-cyan-600 dark:text-cyan-400">Welcome to RxSnap</span>
           </motion.div>
           
           <div className="space-y-3">
@@ -145,7 +145,7 @@ export const RoleSelectionView: React.FC<RoleSelectionViewProps> = ({ onSelectRo
 
       {/* Lightweight Footer */}
       <footer className="text-center py-8 text-slate-400 dark:text-slate-600 text-xs font-medium uppercase tracking-[0.2em]">
-        <p>© {new Date().getFullYear()} MediVision AI Inc. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} RxSnap Inc. All rights reserved.</p>
       </footer>
 
     </div>

@@ -60,7 +60,7 @@ export default async function handler(req: any, res: any) {
     }));
 
     const textPart = {
-      text: `You are "MediVision Clinical Intelligence" — a world-class expert in medical document digitization.
+      text: `You are "RxSnap Clinical Intelligence" — a world-class expert in medical document digitization.
       
       TASK:
       1. Inspect the provided prescription image(s) with extreme precision.

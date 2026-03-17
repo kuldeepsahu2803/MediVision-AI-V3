@@ -13,4 +13,7 @@ export const FEATURE_FLAGS = {
 
   // Enable visual debug overlays (bounding boxes) by default
   DEBUG_VISUALS: false,
+
+  // Enable the new PDF generation engine with Unicode support and layout fixes
+  ENABLE_V2_PDF_ENGINE: true,
 };

@@ -18,12 +18,12 @@ export const Footer: React.FC = () => {
 
         <div className="text-center space-y-4 max-w-3xl">
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed italic opacity-80">
-                This clinical analysis report is synthesized using MediVision AI Core v2.1. Extraction outcomes are subject to physician sign-off. 
-                MediVision AI does not provide medical diagnoses. Always consult with a licensed pharmaceutical expert before initiating clinical interventions.
+                This clinical analysis report is synthesized using RxSnap Clinical Core v2.1. Extraction outcomes are subject to physician sign-off. 
+                RxSnap does not provide medical diagnoses. Always consult with a licensed pharmaceutical expert before initiating clinical interventions.
             </p>
             <div className="h-px w-12 bg-slate-200 dark:bg-white/10 mx-auto"></div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">
-                &copy; {new Date().getFullYear()} MediVision AI Systems Inc. Engineered for Clinical Excellence.
+                &copy; {new Date().getFullYear()} RxSnap Systems Inc. Engineered for Clinical Excellence.
             </p>
         </div>
 

@@ -36,7 +36,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
 
     useEffect(() => {
         if (user) {
-            const names = user.name.split(' ');
+            const names = (user.name || '').split(' ');
             setFirstName(names[0] || '');
             setLastName(names.slice(1).join(' ') || '');
             setEmail(user.email);
@@ -51,7 +51,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
     const handleCancel = () => {
         triggerHaptic('medium');
         if (user) {
-            const names = user.name.split(' ');
+            const names = (user.name || '').split(' ');
             setFirstName(names[0]);
             setLastName(names.slice(1).join(' '));
             setEmail(user.email);

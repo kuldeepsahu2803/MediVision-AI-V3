@@ -89,7 +89,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
       <div className="sticky top-0 z-50 w-full flex justify-center p-4">
         <nav className="glass-panel rounded-full px-6 py-3 flex items-center justify-between gap-8 shadow-2xl max-w-6xl w-full border border-white/60 dark:border-white/10 relative">
           <div className="flex items-center gap-3">
-            <button onClick={() => scrollToSection('hero')} className="flex items-center gap-2 group" aria-label="MediVision Home">
+            <button onClick={() => scrollToSection('hero')} className="flex items-center gap-2 group" aria-label="RxSnap Home">
                <BrandLogo variant="header" />
             </button>
           </div>
@@ -139,20 +139,20 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
               <div className="inline-flex items-center gap-3 bg-white/40 dark:bg-white/5 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/60 dark:border-white/10 shadow-sm w-fit">
                 <BrandLogo variant="header" className="h-6 origin-left" />
                 <span className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1"></span>
-                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Clinical Cockpit v2.1</span>
+                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Clinical Intelligence v2.5</span>
               </div>
             </div>
             <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black leading-[1] tracking-tight text-slate-900 dark:text-white">
-              Prescription Clarity <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-rose-500">at the Speed of Sight</span>
+              Clinical Precision <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">for Every Prescription</span>
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-              Turn handwritten scripts into verified data instantly with our AI-powered clinical cockpit. Experience the future of pharmacy workflows with high-fidelity accuracy.
+              Transform handwritten scripts into verified, evidence-based data instantly. RxSnap provides the intelligence layer for modern pharmacy and clinical workflows.
             </p>
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5">
               <button 
                 onClick={onStart}
-                className="bg-cyan-500 text-white px-10 py-5 rounded-full text-lg font-black shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-105 hover:bg-cyan-600 transition-all flex items-center gap-3"
+                className="bg-emerald-500 text-white px-10 py-5 rounded-full text-lg font-black shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 hover:bg-emerald-600 transition-all flex items-center gap-3"
               >
                 Enter Clinical Portal
                 <RocketIcon />
@@ -426,7 +426,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
           </div>
           
           <div className="border-t border-slate-200 dark:border-slate-800 pt-12 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">© {new Date().getFullYear()} MediVision AI. All rights reserved.</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">© {new Date().getFullYear()} RxSnap. All rights reserved.</p>
             <div className="flex items-center gap-8">
                 <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
                     <div className="w-5 h-5 bg-slate-800 dark:bg-white rounded" />

@@ -100,9 +100,9 @@ export const getDrugInteractions = async (rxcuis: string[]): Promise<any[]> => {
     fullGroups.forEach((group: any) => {
       const types = group.fullInteractionType || [];
       types.forEach((type: any) => {
-        const drugs = type.minConcept.map((c: any) => c.name);
-        const description = type.interactionPair[0]?.description || "No description available.";
-        const severity = type.interactionPair[0]?.severity || "N/A";
+        const drugs = (type.minConcept || []).map((c: any) => c.name);
+        const description = type.interactionPair?.[0]?.description || "No description available.";
+        const severity = type.interactionPair?.[0]?.severity || "N/A";
         
         interactions.push({ drugs, description, severity });
       });
@@ -211,7 +211,7 @@ export const validateStrengthForDrug = async (rxcui: string, strength: string): 
         if (group.conceptProperties) {
           for (const prop of group.conceptProperties) {
              // Precise numeric matching within the RxNorm name string
-             if (prop.name.includes(targetStrength)) return true;
+             if (prop.name?.includes(targetStrength)) return true;
           }
         }
       }

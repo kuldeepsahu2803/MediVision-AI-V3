@@ -178,7 +178,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({ onSelectService, onB
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
             <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>medical_services</span>
           </div>
-          <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">MediVision AI</h1>
+          <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">RxSnap</h1>
         </div>
         <div className="flex items-center gap-3">
             <button 
@@ -310,7 +310,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({ onSelectService, onB
       {/* Footer Metadata */}
       <footer className="w-full max-w-7xl mx-auto px-8 py-10 border-t border-slate-200 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-            MediVision AI Systems • Professional Clinical Tier
+            RxSnap Systems • Professional Clinical Tier
          </p>
          <div className="flex gap-8 items-center grayscale opacity-40">
             <div className="flex items-center gap-2">

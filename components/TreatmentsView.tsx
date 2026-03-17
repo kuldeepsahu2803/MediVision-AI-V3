@@ -63,7 +63,7 @@ const MedicineRow: React.FC<{
   const { triggerHaptic } = useHaptic();
 
   const getIcon = () => {
-    const name = med.name.toLowerCase();
+    const name = (med.name || '').toLowerCase();
     const route = (med.route || '').toLowerCase();
     const dose = (med.dosage || '').toLowerCase();
     
@@ -347,7 +347,7 @@ export const TreatmentsView: React.FC<{ prescription: PrescriptionData | null }>
               <div className="space-y-8 text-lg sm:text-xl text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                 <p>
                   <span className="text-slate-900 dark:text-white font-black">Clinical Intent:</span> The current regimen appears primarily focused on 
-                  {suggestions?.generalRecommendations?.[0]?.toLowerCase().replace('.', '') || 'targeted therapeutic intervention as defined in the primary documentation'}. 
+                  {suggestions?.generalRecommendations?.[0]?.toLowerCase()?.replace('.', '') || 'targeted therapeutic intervention as defined in the primary documentation'}. 
                   The alignment of these agents suggests a unified approach to the patient's presenting symptoms.
                 </p>
                 <p>

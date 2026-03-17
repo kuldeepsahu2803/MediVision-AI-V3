@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { PrescriptionData, AiSuggestions } from '../types.ts';
 
 // Initialize Gemini
@@ -23,52 +23,61 @@ export const analyzePrescription = async (images: { base64Data: string; mimeType
     }));
 
     const prompt = `
-      Analyze this medical prescription image and extract the following information in JSON format.
+      Analyze this medical prescription image and extract the clinical information.
       CRITICAL: For each medication, use Google Search to verify the correct spelling and existence of the medicine name.
       If the handwriting is unclear, provide the most likely standardized medicine name based on search results.
-
-      Return the data in this JSON structure:
-      {
-        "patientName": "string",
-        "date": "string (ISO format)",
-        "doctorName": "string",
-        "doctorSpecialty": "string",
-        "clinicName": "string",
-        "medication": [
-          {
-            "name": "string (original extracted text)",
-            "dosage": "string",
-            "frequency": "string",
-            "duration": "string",
-            "instructions": "string",
-            "verification": {
-              "status": "database_match | tentative_match | low_confidence",
-              "color": "emerald | amber | rose",
-              "normalizedName": "string (correctly spelled standard name)",
-              "confidenceScore": number (0-1),
-              "issues": ["string"],
-              "lastChecked": "string (ISO date)"
-            }
-          }
-        ]
-      }
-      
-      Return ONLY the JSON object.
     `;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        patientName: { type: Type.STRING },
+        patientAge: { type: Type.STRING },
+        patientAddress: { type: Type.STRING },
+        doctorName: { type: Type.STRING },
+        clinicName: { type: Type.STRING },
+        date: { type: Type.STRING, description: "Date written on prescription (ISO format if possible)" },
+        notes: { type: Type.STRING },
+        warnings: { type: Type.ARRAY, items: { type: Type.STRING } },
+        medication: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING, description: "The name of the medication" },
+              dosage: { type: Type.STRING, description: "The strength or dosage (e.g., 500mg)" },
+              frequency: { type: Type.STRING, description: "How often to take it (e.g., twice daily)" },
+              duration: { type: Type.STRING, description: "How long to take it (e.g., 7 days)" },
+              route: { type: Type.STRING, description: "Route of administration (e.g., oral)" }
+            },
+            required: ["name", "dosage", "frequency"]
+          }
+        }
+      },
+      required: ["patientName", "doctorName", "date", "medication"]
+    };
 
     const response = await ai.models.generateContent({
       model,
       contents: { parts: [...imageParts, { text: prompt }] },
       config: {
         responseMimeType: "application/json",
+        responseSchema,
         tools: [{ googleSearch: {} }]
       }
     });
 
-    const result = JSON.parse(response.text || "{}");
+    const text = response.text;
+    if (!text) {
+      throw new Error("Empty response from clinical vision engine.");
+    }
+
+    const result = JSON.parse(text);
     if (result && Array.isArray(result.medication)) {
       return result as Omit<PrescriptionData, 'id' | 'status'>;
     }
+    
+    console.error("Schema Validation Failed. Received:", result);
     throw new Error("Validation Error: Parsed data does not match the clinical schema.");
   } catch (e: any) {
     console.error("Analysis Pipeline Failed:", e);

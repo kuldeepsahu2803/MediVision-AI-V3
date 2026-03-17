@@ -11,10 +11,10 @@ const Icon = ({ iconClassName = "" }: { iconClassName?: string }) => (
                 <stop offset="100%" stopColor="#06b6d4" /> {/* Cyan-500 */}
             </linearGradient>
             
-            {/* Pink Gradient for Right Side */}
-            <linearGradient id="pillPink" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fb7185" /> {/* Rose-400 */}
-                <stop offset="100%" stopColor="#e11d48" /> {/* Rose-600 */}
+            {/* Emerald Gradient for Right Side */}
+            <linearGradient id="pillEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#34d399" /> {/* Emerald-400 */}
+                <stop offset="100%" stopColor="#059669" /> {/* Emerald-600 */}
             </linearGradient>
             
             {/* Soft Glow Filter */}
@@ -31,9 +31,9 @@ const Icon = ({ iconClassName = "" }: { iconClassName?: string }) => (
             {/* Path draws from center-top to left-arc and back to center-bottom */}
             <path d="M50 30 L30 30 A 20 20 0 0 0 30 70 L50 70 Z" fill="url(#pillBlue)" />
             
-            {/* Right/Bottom Half - Pink Capsule Part */}
+            {/* Right/Bottom Half - Emerald Capsule Part */}
             {/* Path draws from center-top to right-arc and back to center-bottom */}
-            <path d="M50 30 L70 30 A 20 20 0 0 1 70 70 L50 70 Z" fill="url(#pillPink)" />
+            <path d="M50 30 L70 30 A 20 20 0 0 1 70 70 L50 70 Z" fill="url(#pillEmerald)" />
             
             {/* Divider Line (Subtle white line separating the two halves) */}
             <rect x="49" y="30" width="2" height="40" fill="white" fillOpacity="0.2" />
@@ -70,16 +70,15 @@ const BrandLogo: React.FC<BrandLogoProps> = ({
     // The "full" variant for login screen and main page title
     if (variant === 'full') {
         return (
-            <div className={`flex items-center gap-4 ${className}`} aria-label="MediVision AI">
+            <div className={`flex items-center gap-4 ${className}`} aria-label="RxSnap">
                 <Icon iconClassName="w-16 h-16 drop-shadow-lg" />
                 <div className="text-left flex flex-col justify-center">
                     <h1 className="text-3xl font-extrabold tracking-tight leading-none">
-                        <span className="text-cyan-500 dark:text-cyan-400">Medi</span>
-                        <span className="text-rose-500 dark:text-rose-500">Vision</span>
-                        <span className="text-rose-500 dark:text-rose-500 ml-1.5">AI</span>
+                        <span className="text-cyan-500 dark:text-cyan-400">Rx</span>
+                        <span className="text-emerald-500 dark:text-emerald-500">Snap</span>
                     </h1>
                     <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1.5 tracking-[0.2em] uppercase">
-                        Smart Healthcare Technology
+                        Clinical Intelligence Platform
                     </p>
                 </div>
             </div>
@@ -88,12 +87,12 @@ const BrandLogo: React.FC<BrandLogoProps> = ({
     
     // Header variant (Compact)
     return (
-        <div className={`flex items-center gap-2.5 ${className}`} aria-label="MediVision AI">
+        <div className={`flex items-center gap-2.5 ${className}`} aria-label="RxSnap">
             <Icon iconClassName="w-9 h-9 drop-shadow-md" />
             <span className="hidden sm:inline-block font-extrabold text-xl tracking-tight">
-                <span className="text-cyan-600 dark:text-cyan-400">Medi</span>
-                <span className="text-rose-500 dark:text-rose-500">Vision</span>
-                <span className="text-rose-500 dark:text-rose-500 ml-1">AI</span>
+                <span className="text-cyan-600 dark:text-cyan-400">Rx</span>
+                <span className="text-emerald-500 dark:text-emerald-500">Snap</span>
+                <span className="text-slate-400 dark:text-slate-500 ml-1.5 text-sm font-black uppercase tracking-widest">Clinical</span>
             </span>
         </div>
     );

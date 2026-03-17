@@ -41,7 +41,7 @@ export const useAppWorkflow = ({
         } catch (e: any) {
             triggerHaptic('error');
             showToast(e.message, "error");
-            if (e.message.includes("log in") && userRole === 'professional') setShowLoginModal(true);
+            if (e.message?.includes("log in") && userRole === 'professional') setShowLoginModal(true);
         }
     };
 
