@@ -24,6 +24,7 @@ interface AppLayoutProps {
   onLogoClick: () => void;
   triggerHaptic: (type: any) => void;
   cloudStatus: string;
+  selectedModule: 'rx' | 'blood';
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
@@ -44,7 +45,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onLogout,
   onLogoClick,
   triggerHaptic,
-  cloudStatus
+  cloudStatus,
+  selectedModule
 }) => {
   return (
     <div className="flex flex-col min-h-screen w-full relative bg-light-bg dark:bg-dark-bg text-slate-900 dark:text-slate-100 overflow-y-auto overflow-x-hidden">
@@ -64,6 +66,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           showTreatments={showTreatments} 
           onLogoClick={onLogoClick}
           cloudStatus={cloudStatus}
+          selectedModule={selectedModule}
         />
       </div>
 

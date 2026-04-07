@@ -9,6 +9,7 @@ export const useAuthSession = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [cloudStatus, setCloudStatus] = useState<CloudStatus>('UNINITIALIZED');
 
   const checkCapability = useCallback(async () => {
@@ -19,15 +20,32 @@ export const useAuthSession = () => {
     
     try {
       setCloudStatus('DISCOVERING');
-      // Minimal heartbeat check to verify node connectivity
-      const { error } = await supabase.auth.getSession();
-      if (error) throw error;
+      
+      // Add a timeout to prevent infinite spinner if Supabase is unreachable
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Supabase connection timed out")), 5000)
+      );
+      
+      const sessionPromise = supabase.auth.getSession();
+      
+      const { error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+      
+      if (error) {
+        if (error.message.includes('Failed to fetch')) {
+          throw new Error("Network error: Could not connect to Supabase. Check your URL and internet connection.");
+        }
+        throw error;
+      }
       
       setCloudStatus('ENABLED');
       return true;
-    } catch (e) {
+    } catch (e: any) {
       console.warn("Clinical Infrastructure: Cloud node unreachable.", e);
       setCloudStatus('DEGRADED');
+      // If it's a fetch error, it's likely a configuration or network issue
+      if (e.message?.includes('Failed to fetch')) {
+        setError("Failed to connect to cloud infrastructure. Operating in local-only mode.");
+      }
       return false;
     }
   }, []);
@@ -93,5 +111,5 @@ export const useAuthSession = () => {
     window.location.reload(); 
   };
 
-  return { user, isLoggedIn, logout, loading, cloudStatus, refreshCapability: checkCapability };
+  return { user, isLoggedIn, logout, loading, error, cloudStatus, refreshCapability: checkCapability };
 };

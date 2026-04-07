@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { HamburgerMenuIcon } from './icons/HamburgerMenuIcon.tsx';
 import { AnalyzeIcon } from './icons/AnalyzeIcon.tsx';
 import { ClipboardDocumentCheckIcon } from './icons/ClipboardDocumentCheckIcon.tsx';
@@ -20,6 +20,7 @@ interface HeaderProps {
   showTreatments: boolean;
   onLogoClick?: () => void;
   cloudStatus: string;
+  selectedModule: 'rx' | 'blood';
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -31,17 +32,33 @@ export const Header: React.FC<HeaderProps> = ({
   hasData,
   showTreatments, 
   onLogoClick,
-  cloudStatus
+  cloudStatus,
+  selectedModule
 }) => {
   const navLinks: { id: AppTab; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>>; color: string; bg: string }[] = [
     { id: AppTab.ANALYZE, label: 'Analyze', icon: AnalyzeIcon, color: 'text-primary', bg: 'bg-primary/5' },
+    { id: AppTab.LABS, label: 'Labs', icon: AnalyzeIcon, color: 'text-brand-blue', bg: 'bg-brand-blue/5' },
     { id: AppTab.REVIEW, label: 'Review', icon: ClipboardDocumentCheckIcon, color: 'text-amber-500', bg: 'bg-amber-500/5' },
     { id: AppTab.TREATMENTS, label: 'Insights', icon: StethoscopeIcon, color: 'text-rose-500', bg: 'bg-rose-500/5' },
     { id: AppTab.REPORTS, label: 'Reports', icon: FolderIcon, color: 'text-brand-blue', bg: 'bg-brand-blue/5' },
     { id: AppTab.SETTINGS, label: 'Settings', icon: SettingsIcon, color: 'text-slate-500', bg: 'bg-slate-500/5' },
   ];
 
-  const availableNavLinks = showTreatments ? navLinks : navLinks.filter(l => l.id !== AppTab.TREATMENTS);
+  const availableNavLinks = useMemo(() => {
+    let links = navLinks;
+    if (!showTreatments) {
+      links = links.filter(l => l.id !== AppTab.TREATMENTS);
+    }
+    
+    // Filter based on selected module
+    if (selectedModule === 'rx') {
+      links = links.filter(l => l.id !== AppTab.LABS);
+    } else if (selectedModule === 'blood') {
+      links = links.filter(l => l.id !== AppTab.ANALYZE && l.id !== AppTab.REVIEW && l.id !== AppTab.TREATMENTS);
+    }
+    
+    return links;
+  }, [showTreatments, selectedModule]);
 
   const renderCloudStatus = () => {
     switch (cloudStatus) {
@@ -57,7 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="relative w-full z-40 transition-all duration-300">
+    <header className="relative w-full z-40 transition-all duration-300 pt-[env(safe-area-inset-top,0px)]">
       <div className="absolute inset-0 bg-white/95 dark:bg-black/90 border-b border-light-border dark:border-dark-border shadow-sm backdrop-blur-xl" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 sm:h-24 flex items-center justify-between">
@@ -97,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                   
                   <span className="relative z-10 flex items-center gap-2.5">
-                    <link.icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110' : 'opacity-60'}`} />
+                    <link.icon className={`w-[22px] h-[22px] transition-transform duration-300 ${isActive ? 'scale-110' : 'opacity-60'}`} />
                     {link.label}
                   </span>
 

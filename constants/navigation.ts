@@ -8,6 +8,7 @@ export enum AppView {
 
 export enum AppTab {
   ANALYZE = 'Analyze',
+  LABS = 'Labs',
   REVIEW = 'Review',
   REPORTS = 'Reports',
   TREATMENTS = 'Insights',

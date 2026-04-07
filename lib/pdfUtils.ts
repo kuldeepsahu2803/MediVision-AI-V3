@@ -264,18 +264,20 @@ export const generateDoc = async (report: PrescriptionData): Promise<any> => {
 
     // --- 4. Important Notes Section ---
     const hasNotes = report.notes && normalizeForPDF(report.notes, '') !== '';
+    const hasTranslation = report.translatedNotes && report.translatedNotes !== 'N/A';
+    const hasPatientSummary = report.patientSummary && normalizeForPDF(report.patientSummary, '') !== '';
     const hasAiRecs = report.aiSuggestions?.generalRecommendations?.length;
 
-    if (hasNotes || hasAiRecs) {
+    if (hasNotes || hasTranslation || hasPatientSummary || hasAiRecs) {
         if (currentY > pageHeight - 150) {
             doc.addPage();
             currentY = margin;
         }
         
-        currentY = drawSectionHeader(doc, 'Important Notes', currentY);
+        currentY = drawSectionHeader(doc, 'Clinical Insights & Education', currentY);
 
         if (hasNotes) {
-            const splitNotes = doc.splitTextToSize(normalizeForPDF(report.notes), contentWidth - 40);
+            const splitNotes = doc.splitTextToSize(`Original Notes: ${normalizeForPDF(report.notes)}`, contentWidth - 40);
             const notesHeight = (splitNotes.length * 14) + 20;
             
             doc.setFillColor(...THEME.colors.primaryLight);
@@ -286,6 +288,34 @@ export const generateDoc = async (report: PrescriptionData): Promise<any> => {
             doc.text(splitNotes, margin + 20, currentY + 20);
             
             currentY += notesHeight + 15;
+        }
+
+        if (hasTranslation) {
+            const splitTrans = doc.splitTextToSize(`English Translation: ${normalizeForPDF(report.translatedNotes!)}`, contentWidth - 40);
+            const transHeight = (splitTrans.length * 14) + 20;
+            
+            doc.setFillColor(...THEME.colors.accentBlue);
+            doc.roundedRect(margin, currentY, contentWidth, transHeight, 8, 8, 'F');
+            setDocFont(doc, 'italic');
+            doc.setFontSize(10);
+            doc.setTextColor(...THEME.colors.textDark);
+            doc.text(splitTrans, margin + 20, currentY + 20);
+            
+            currentY += transHeight + 15;
+        }
+
+        if (hasPatientSummary) {
+            const splitSumm = doc.splitTextToSize(`Patient Summary: ${normalizeForPDF(report.patientSummary!)}`, contentWidth - 40);
+            const summHeight = (splitSumm.length * 14) + 25;
+            
+            doc.setFillColor(...THEME.colors.successBg);
+            doc.roundedRect(margin, currentY, contentWidth, summHeight, 8, 8, 'F');
+            setDocFont(doc, 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(...THEME.colors.successText);
+            doc.text(splitSumm, margin + 20, currentY + 20);
+            
+            currentY += summHeight + 15;
         }
 
         if (hasAiRecs) {

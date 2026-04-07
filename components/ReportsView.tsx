@@ -1,7 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
-import { PrescriptionData } from '../types.ts';
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { PrescriptionData, BloodTestReport } from '../types.ts';
+import { ArchiveFilterBar } from './clinical/ArchiveFilterBar.tsx';
+import { SyncStatusBar } from './clinical/SyncStatusBar.tsx';
+import { motion, useMotionValue, useTransform, AnimatePresence, m } from 'framer-motion';
 import { TrashIcon } from './icons/TrashIcon.tsx';
 import { FolderIcon } from './icons/FolderIcon.tsx';
 import { DownloadIcon } from './icons/DownloadIcon.tsx';
@@ -33,15 +35,19 @@ const toLocalDate = (dateStr: string) => {
     return new Date(dateStr);
 };
 
-const groupReportsByDate = (reports: PrescriptionData[]) => {
-    const groups: Record<string, PrescriptionData[]> = {};
+type UnifiedReport = 
+    | { type: 'rx'; data: PrescriptionData }
+    | { type: 'lab'; data: BloodTestReport };
+
+const groupReportsByDate = (reports: UnifiedReport[]) => {
+    const groups: Record<string, UnifiedReport[]> = {};
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    reports.forEach(report => {
-        const dateToUse = report.timestamp || report.date;
+    reports.forEach(item => {
+        const dateToUse = item.data.timestamp || item.data.date;
         if (!dateToUse) return;
 
         const localDate = toLocalDate(dateToUse);
@@ -57,7 +63,7 @@ const groupReportsByDate = (reports: PrescriptionData[]) => {
         }
 
         if (!groups[key]) groups[key] = [];
-        groups[key].push(report);
+        groups[key].push(item);
     });
     return groups;
 };
@@ -142,27 +148,117 @@ const TimelineItem: React.FC<{
                     <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{timeString}</span>
                         <div className="flex items-center gap-1">
-                             <button 
+                             <m.button 
+                                whileHover={{ scale: 1.1, y: -2 }}
+                                whileTap={{ scale: 0.9 }}
                                 onClick={(e) => { e.stopPropagation(); onPreview(); }}
                                 className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all"
                                 title="Quick Preview"
                             >
                                 <EyeIcon className="size-5" />
-                            </button>
-                            <button 
+                            </m.button>
+                            <m.button 
+                                whileHover={{ scale: 1.1, y: -2 }}
+                                whileTap={{ scale: 0.9 }}
                                 onClick={(e) => { e.stopPropagation(); onDownload(); }}
                                 disabled={isDownloading}
                                 className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all disabled:opacity-50"
                                 title="Download PDF"
                             >
                                 {isDownloading ? <Spinner className="size-4" /> : <DownloadIcon className="size-5" />}
-                            </button>
-                            <button 
+                            </m.button>
+                            <m.button 
+                                whileHover={{ scale: 1.05, x: 5 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={(e) => { e.stopPropagation(); onSelect(); }}
                                 className="ml-4 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 text-[10px] font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-sm"
                             >
                                 DETAILS <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-                            </button>
+                            </m.button>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
+
+const LabTimelineItem: React.FC<{
+    report: BloodTestReport;
+    onDelete: () => void;
+}> = ({ report, onDelete }) => {
+    const x = useMotionValue(0);
+    const deleteOpacity = useTransform(x, [-100, -20], [1, 0]);
+
+    const hasFullTimestamp = report.timestamp?.includes('T');
+    const timeString = hasFullTimestamp 
+        ? new Date(report.timestamp!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : 'Report Logged';
+
+    const criticalCount = report.results.filter(r => r.status === 'Critical').length;
+    const abnormalCount = report.results.filter(r => r.status === 'Low' || r.status === 'High').length;
+
+    return (
+        <motion.div 
+            layout 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative mb-8 overflow-hidden rounded-[2.5rem] group"
+        >
+            <motion.div 
+                style={{ opacity: deleteOpacity }}
+                className="absolute inset-0 bg-rose-600 rounded-[2.5rem] flex items-center justify-end pr-10"
+            >
+                <TrashIcon className="size-6 text-white" />
+            </motion.div>
+
+            <motion.div
+                drag="x"
+                dragConstraints={{ left: -100, right: 0 }}
+                style={{ x }}
+                onDragEnd={(_e, { offset }) => {
+                    if (offset.x < -80) onDelete();
+                }}
+                className="relative bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 p-7 shadow-glass hover:shadow-2xl transition-all cursor-pointer z-10"
+            >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+                    <div className="flex gap-6">
+                        <div className="size-16 shrink-0 rounded-2xl flex items-center justify-center shadow-inner border border-white/40 dark:border-transparent bg-purple-50 text-purple-500">
+                            <span className="material-symbols-outlined text-[32px]">
+                                lab_research
+                            </span>
+                        </div>
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-3 mb-2">
+                                <h4 className="text-xl font-black text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors uppercase tracking-tight truncate">
+                                    {report.patientName}
+                                </h4>
+                                <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm bg-purple-50 text-purple-600 border-purple-100">
+                                    Blood Report
+                                </span>
+                                {criticalCount > 0 && (
+                                    <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm bg-rose-50 text-rose-600 border-rose-100 animate-pulse">
+                                        {criticalCount} Critical
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                                {report.results.length} Biomarkers • {abnormalCount} Abnormal
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{timeString}</span>
+                        <div className="flex items-center gap-1">
+                             <m.button 
+                                whileHover={{ scale: 1.1, y: -2 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all"
+                                title="View Lab Results"
+                            >
+                                <EyeIcon className="size-5" />
+                            </m.button>
                         </div>
                     </div>
                 </div>
@@ -174,22 +270,68 @@ const TimelineItem: React.FC<{
 // --- Main Page Component ---
 interface ReportsViewProps {
     history: PrescriptionData[];
+    labHistory: BloodTestReport[];
     isLoading: boolean;
     onSelectPrescription: (report: PrescriptionData) => void;
     onDeleteReport: (id: string) => void;
+    onDeleteLab: (id: string) => void;
     onNavigateToAnalyze: () => void;
 }
 
-export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, onSelectPrescription, onDeleteReport, onNavigateToAnalyze }) => {
+export const ReportsView: React.FC<ReportsViewProps> = ({ 
+    history, 
+    labHistory, 
+    isLoading, 
+    onSelectPrescription, 
+    onDeleteReport, 
+    onDeleteLab,
+    onNavigateToAnalyze 
+}) => {
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilter, setActiveFilter] = useState('all');
 
-    const groupedHistory = useMemo(() => groupReportsByDate(history), [history]);
+    const unifiedHistory = useMemo(() => {
+        const rxItems: UnifiedReport[] = history.map(h => ({ type: 'rx', data: h }));
+        const labItems: UnifiedReport[] = labHistory.map(l => ({ type: 'lab', data: l }));
+        return [...rxItems, ...labItems].sort((a, b) => {
+            const dateA = new Date(a.data.timestamp || a.data.date).getTime();
+            const dateB = new Date(b.data.timestamp || b.data.date).getTime();
+            return dateB - dateA;
+        });
+    }, [history, labHistory]);
+
+    const filteredHistory = useMemo(() => {
+        return unifiedHistory.filter(item => {
+            const matchesSearch = 
+                item.data.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.data.id.toLowerCase().includes(searchQuery.toLowerCase());
+            
+            const matchesFilter = 
+                activeFilter === 'all' ||
+                (activeFilter === 'verified' && item.type === 'rx' && (item.data as PrescriptionData).status === 'Clinically-Verified') ||
+                (activeFilter === 'review' && item.type === 'rx' && (item.data as PrescriptionData).status !== 'Clinically-Verified') ||
+                (activeFilter === 'labs' && item.type === 'lab');
+
+            return matchesSearch && matchesFilter;
+        });
+    }, [unifiedHistory, searchQuery, activeFilter]);
+
+    const groupedHistory = useMemo(() => groupReportsByDate(filteredHistory), [filteredHistory]);
     const groupKeys = useMemo(() => Object.keys(groupedHistory), [groupedHistory]);
 
+    const filterOptions = [
+        { id: 'all', label: 'All Reports', count: unifiedHistory.length },
+        { id: 'review', label: 'Needs Review', count: history.filter(h => h.status !== 'Clinically-Verified').length },
+        { id: 'verified', label: 'Verified', count: history.filter(h => h.status === 'Clinically-Verified').length },
+        { id: 'labs', label: 'Lab Reports', count: labHistory.length },
+    ];
+
     const stats = useMemo(() => ({
-        total: history.length,
-        needsReview: history.filter(h => h.status !== 'Clinically-Verified').length
-    }), [history]);
+        total: unifiedHistory.length,
+        needsReview: history.filter(h => h.status !== 'Clinically-Verified').length,
+        labs: labHistory.length
+    }), [history, labHistory, unifiedHistory]);
 
     const handleDownload = async (report: PrescriptionData) => {
         setDownloadingId(report.id);
@@ -270,6 +412,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <div className="flex justify-end mb-8">
+                <SyncStatusBar status="synced" lastSynced={new Date().toISOString()} />
+            </div>
+
             {/* Official Branded Header */}
             <div className="mb-16 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-10">
                 <div className="space-y-5">
@@ -299,11 +445,89 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
                 </div>
             </div>
 
+            <ArchiveFilterBar 
+                options={filterOptions}
+                activeFilter={activeFilter}
+                onFilterChange={setActiveFilter}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                className="mb-16"
+            />
+
+            {/* Bento Grid Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
+                {/* Total Activity - Primary Bento Card */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="md:col-span-2 glass-panel p-10 rounded-[3rem] shadow-2xl border-white/60 dark:border-white/10 relative overflow-hidden group"
+                >
+                    <div className="relative z-10 flex flex-col h-full justify-between">
+                        <div>
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Total Clinical Activity</h4>
+                            <h2 className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
+                                {stats.total} <span className="text-2xl text-slate-400 font-medium">Reports</span>
+                            </h2>
+                        </div>
+                        <div className="mt-8 flex items-center gap-4">
+                            <div className="flex -space-x-3">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="size-10 rounded-full border-4 border-white dark:border-zinc-900 bg-slate-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+                                        <img src={`https://picsum.photos/seed/user${i}/100/100`} alt="User" className="size-full object-cover" referrerPolicy="no-referrer" />
+                                    </div>
+                                ))}
+                                <div className="size-10 rounded-full border-4 border-white dark:border-zinc-900 bg-brand-blue text-white flex items-center justify-center text-[10px] font-bold">
+                                    +12
+                                </div>
+                            </div>
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 italic">Collaborative archive active</p>
+                        </div>
+                    </div>
+                    <div className="absolute -right-10 -bottom-10 size-48 bg-brand-blue/5 rounded-full blur-3xl group-hover:bg-brand-blue/10 transition-colors duration-700" />
+                </motion.div>
+
+                {/* Needs Review - Secondary Bento Card */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="md:col-span-1 glass-panel p-10 rounded-[3rem] shadow-2xl border-white/60 dark:border-white/10 flex flex-col justify-between group"
+                >
+                    <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-500 mb-6">Action Required</h4>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-5xl font-black text-rose-500 animate-pulse-ai">{stats.needsReview}</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Items</span>
+                        </div>
+                    </div>
+                    <p className="text-[11px] font-bold text-slate-500 leading-relaxed mt-4">
+                        Prescriptions awaiting clinical verification or correction.
+                    </p>
+                </motion.div>
+
+                {/* Quick Action - Tertiary Bento Card */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    onClick={onNavigateToAnalyze}
+                    className="md:col-span-1 bg-slate-900 dark:bg-white p-10 rounded-[3rem] shadow-2xl flex flex-col justify-between group cursor-pointer hover:scale-[1.02] transition-all active:scale-95"
+                >
+                    <div className="size-14 rounded-2xl bg-white/10 dark:bg-black/10 flex items-center justify-center text-white dark:text-black mb-6 group-hover:rotate-12 transition-transform">
+                        <span className="material-symbols-outlined text-3xl">add_circle</span>
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-white dark:text-black leading-tight mb-2">New<br/>Analysis</h3>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Start Scan</p>
+                    </div>
+                </motion.div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
                 {/* Clinical Timeline Track */}
                 <div className="lg:col-span-8 relative">
                     {/* Vertical Progression Line */}
-                    <div className="absolute left-[39px] top-10 bottom-0 w-1 bg-gradient-to-b from-slate-100 via-slate-100/50 to-transparent dark:from-white/10 dark:via-white/5 z-0 rounded-full" />
+                    <div className="absolute left-[39px] top-10 bottom-0 w-1 bg-gradient-to-b from-brand-blue/20 via-slate-100/50 to-transparent dark:from-white/10 dark:via-white/5 z-0 rounded-full" />
                     
                     <div className="space-y-20 relative z-10">
                         <AnimatePresence mode="popLayout">
@@ -320,16 +544,24 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
                                     </div>
 
                                     <div className="pl-20">
-                                        {groupedHistory[key].map((report) => (
-                                            <TimelineItem 
-                                                key={report.id}
-                                                report={report}
-                                                onSelect={() => onSelectPrescription(report)}
-                                                onDelete={() => onDeleteReport(report.id)}
-                                                onDownload={() => handleDownload(report)}
-                                                onPreview={() => handlePreview(report)}
-                                                isDownloading={downloadingId === report.id}
-                                            />
+                                        {groupedHistory[key].map((item) => (
+                                            item.type === 'rx' ? (
+                                                <TimelineItem 
+                                                    key={item.data.id}
+                                                    report={item.data as PrescriptionData}
+                                                    onSelect={() => onSelectPrescription(item.data as PrescriptionData)}
+                                                    onDelete={() => onDeleteReport(item.data.id)}
+                                                    onDownload={() => handleDownload(item.data as PrescriptionData)}
+                                                    onPreview={() => handlePreview(item.data as PrescriptionData)}
+                                                    isDownloading={downloadingId === item.data.id}
+                                                />
+                                            ) : (
+                                                <LabTimelineItem 
+                                                    key={item.data.id}
+                                                    report={item.data as BloodTestReport}
+                                                    onDelete={() => onDeleteLab(item.data.id)}
+                                                />
+                                            )
                                         ))}
                                     </div>
                                 </motion.section>
@@ -359,24 +591,30 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ history, isLoading, on
                     <div className="glass-panel p-10 rounded-[3rem] shadow-2xl border-white/60 dark:border-white/10">
                         <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">Classification</h4>
                         <div className="space-y-3">
-                            <button className="w-full flex items-center justify-between p-5 rounded-[1.5rem] bg-brand-blue/5 text-brand-blue border border-brand-blue/10 hover:bg-brand-blue/10 transition-all shadow-sm">
+                            <button 
+                                onClick={() => setActiveFilter('all')}
+                                className={`w-full flex items-center justify-between p-5 rounded-[1.5rem] transition-all shadow-sm ${activeFilter === 'all' ? 'bg-brand-blue/5 text-brand-blue border-brand-blue/10' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 border-transparent'}`}
+                            >
                                 <div className="flex items-center gap-4">
                                     <span className="material-symbols-outlined text-[22px]">prescriptions</span>
                                     <span className="text-xs font-black uppercase tracking-widest">Prescriptions</span>
                                 </div>
-                                <span className="text-xs font-black">{stats.total}</span>
+                                <span className="text-xs font-black">{history.length}</span>
+                            </button>
+                            <button 
+                                onClick={() => setActiveFilter('labs')}
+                                className={`w-full flex items-center justify-between p-5 rounded-[1.5rem] transition-all shadow-sm ${activeFilter === 'labs' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 border-transparent'}`}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <span className="material-symbols-outlined text-[22px]">clinical_notes</span>
+                                    <span className="text-xs font-black uppercase tracking-widest">Lab Results</span>
+                                </div>
+                                <span className="text-xs font-black">{labHistory.length}</span>
                             </button>
                             <button className="w-full flex items-center justify-between p-5 rounded-[1.5rem] text-slate-400 opacity-40 cursor-not-allowed border border-transparent">
                                 <div className="flex items-center gap-4">
                                     <span className="material-symbols-outlined text-[22px]">radiology</span>
-                                    <span className="text-xs font-black uppercase tracking-widest">Imaging (Lab)</span>
-                                </div>
-                                <span className="text-xs font-black">0</span>
-                            </button>
-                            <button className="w-full flex items-center justify-between p-5 rounded-[1.5rem] text-slate-400 opacity-40 cursor-not-allowed border border-transparent">
-                                <div className="flex items-center gap-4">
-                                    <span className="material-symbols-outlined text-[22px]">clinical_notes</span>
-                                    <span className="text-xs font-black uppercase tracking-widest">Lab Results</span>
+                                    <span className="text-xs font-black uppercase tracking-widest">Imaging</span>
                                 </div>
                                 <span className="text-xs font-black">0</span>
                             </button>

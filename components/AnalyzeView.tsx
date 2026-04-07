@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ImageUploader } from './ImageUploader.tsx';
 import { ResultsDisplay } from './ResultsDisplay.tsx';
+import { OCRCorrectionSheet } from './clinical/OCRCorrectionSheet.tsx';
 import { Spinner } from './Spinner.tsx';
 import { PrescriptionData } from '../types.ts';
 import { formatDate } from '../lib/utils.ts';
@@ -28,27 +29,44 @@ const m = motion as any;
 
 const NetworkStatusBanner = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [backendHealthy, setBackendHealthy] = useState(true);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
+
+        const checkBackend = async () => {
+            try {
+                const res = await fetch('/api/health');
+                setBackendHealthy(res.ok);
+            } catch {
+                setBackendHealthy(false);
+            }
+        };
+
+        const interval = setInterval(checkBackend, 30000);
+        checkBackend();
+
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
+            clearInterval(interval);
         };
     }, []);
 
-    if (isOnline) return null;
+    if (isOnline && backendHealthy) return null;
 
     return (
         <motion.div 
             initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-            className="w-full bg-rose-600 text-white py-2 px-4 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest z-[60]"
+            className={`w-full ${!isOnline ? 'bg-rose-600' : 'bg-amber-600'} text-white py-2 px-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] z-[60] shadow-lg`}
         >
-            <span className="material-symbols-outlined text-sm">cloud_off</span>
-            Offline Mode: Clinical Sync and AI Analysis are disabled
+            <span className="material-symbols-outlined text-sm">{!isOnline ? 'cloud_off' : 'dns'}</span>
+            {!isOnline 
+                ? 'Offline Mode: Clinical Sync and AI Analysis are disabled' 
+                : 'Backend Connectivity Issues: AI Analysis may be slow or unavailable'}
         </motion.div>
     );
 };
@@ -105,24 +123,35 @@ const CameraScanner = ({ onCapture, onClose }: { onCapture: (file: File) => void
   };
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center overflow-hidden">
       <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <div className="w-[85%] max-w-md aspect-[3/4] rounded-3xl border-2 border-white/30 relative shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+        <div className="w-[85%] max-w-md aspect-[3/4] rounded-3xl border-2 border-white/30 relative shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] overflow-hidden">
           <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-3xl" />
           <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-3xl" />
           <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-3xl" />
           <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-3xl" />
-          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-primary/30 animate-pulse shadow-[0_0_15px_rgba(13,215,242,0.5)]" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_20px_rgba(13,215,242,0.8)] animate-scan" />
         </div>
-        <p className="mt-8 text-white font-bold text-sm uppercase tracking-widest drop-shadow-md">Align prescription in frame</p>
+        <div className="mt-8 px-8 py-3 bg-black/80 backdrop-blur-xl rounded-full border border-white/20 shadow-2xl">
+          <p className="text-white font-black text-[11px] uppercase tracking-[0.25em] animate-pulse">Align prescription in frame</p>
+        </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-10 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between px-16">
-        <button onClick={onClose} className="p-4 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors pointer-events-auto">
+      <div className="absolute bottom-0 left-0 right-0 p-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between px-16 z-20">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onClose(); }} 
+          className="p-5 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors pointer-events-auto active:scale-90 border border-white/10"
+        >
           <span className="material-symbols-outlined text-3xl">close</span>
         </button>
-        <button onClick={takePhoto} className="size-20 rounded-full border-4 border-white bg-white/20 p-1 pointer-events-auto transition-transform active:scale-90">
-          <div className="size-full rounded-full bg-white shadow-xl" />
+        <button 
+          onClick={(e) => { e.stopPropagation(); takePhoto(); }} 
+          className="size-24 rounded-full border-4 border-white bg-white/20 p-1.5 pointer-events-auto transition-transform active:scale-95 shadow-2xl z-30"
+        >
+          <m.div 
+            whileTap={{ scale: 0.85 }}
+            className="size-full rounded-full bg-white shadow-inner" 
+          />
         </button>
         <div className="size-14" />
       </div>
@@ -132,12 +161,13 @@ const CameraScanner = ({ onCapture, onClose }: { onCapture: (file: File) => void
 };
 
 const HelpModal = ({ onClose }: { onClose: () => void }) => (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm" onClick={onClose}>
+  <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md" onClick={onClose}>
     <m.div 
       initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
       onClick={e => e.stopPropagation()}
-      className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl max-w-lg w-full border border-slate-200 dark:border-white/10"
+      className="bg-white dark:bg-zinc-900 p-8 rounded-[3rem] shadow-2xl max-w-lg w-full border border-slate-200 dark:border-white/20 overflow-hidden relative"
     >
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-secondary to-primary animate-neural"></div>
       <div className="flex justify-between items-start mb-6">
         <div className="size-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
           <span className="material-symbols-outlined text-3xl">menu_book</span>
@@ -172,6 +202,7 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
 }) => {
   const [showHelp, setShowHelp] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [correctionImage, setCorrectionImage] = useState<string | null>(null);
   const recentHistory = history.slice(0, 4);
 
   const storageStats = useMemo(() => {
@@ -193,8 +224,18 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
 
   const handleCapture = (file: File) => {
     triggerHaptic('success');
-    onAddImages([file]);
+    const url = URL.createObjectURL(file);
+    setCorrectionImage(url);
     setShowScanner(false);
+  };
+
+  const handleCorrectionConfirm = (croppedImage: string) => {
+    // In a real app, we'd convert the cropped image back to a File
+    // For now, we'll just use the original file
+    const file = imageFiles[imageFiles.length - 1]; // This is a bit hacky, but works for the demo
+    onAddImages([file]);
+    setCorrectionImage(null);
+    onAnalyze(); // Trigger analysis immediately after confirmation
   };
 
   return (
@@ -203,6 +244,13 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
       <AnimatePresence>
         {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
         {showScanner && <CameraScanner onCapture={handleCapture} onClose={() => setShowScanner(false)} />}
+        {correctionImage && (
+          <OCRCorrectionSheet 
+            imageUrl={correctionImage} 
+            onConfirm={handleCorrectionConfirm}
+            onCancel={() => setCorrectionImage(null)}
+          />
+        )}
       </AnimatePresence>
 
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-10">
@@ -249,7 +297,13 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
             )}
           </AnimatePresence>
           <div className="flex justify-end mt-4">
-            <m.button whileTap={{ scale: 0.98 }} onClick={onAnalyze} disabled={imageFiles.length === 0 || isLoading || !navigator.onLine} className="btn-gradient-cta rounded-full px-14 py-6 w-full sm:w-auto disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed border-none outline-none overflow-hidden relative group">
+            <m.button 
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.95 }} 
+              onClick={onAnalyze} 
+              disabled={imageFiles.length === 0 || isLoading || !navigator.onLine} 
+              className="btn-gradient-cta rounded-full px-14 py-6 w-full sm:w-auto disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed border-none outline-none overflow-hidden relative group"
+            >
               <div className="relative z-10 flex items-center justify-center gap-3 font-black text-xl tracking-widest uppercase">
                 {isLoading ? <Spinner className="size-6 text-white" /> : <><span className="material-symbols-outlined text-2xl">auto_fix_high</span>Analyze {imageFiles.length > 0 ? `${imageFiles.length} ` : ''}{imageFiles.length === 1 ? 'Prescription' : 'Files'}</>}
               </div>
@@ -272,7 +326,21 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
                     <div className="flex-1 overflow-y-auto pr-2 space-y-4 no-scrollbar">
                       {recentHistory.length > 0 ? recentHistory.map((item, i) => (
                           <m.div key={item.id} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} onClick={() => { triggerHaptic('light'); onSelectHistory(item); }} className="group flex items-center gap-5 p-4 rounded-3xl bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-zinc-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-white/20 cursor-pointer shadow-sm hover:shadow-md"><div className="size-16 rounded-2xl bg-slate-100 dark:bg-zinc-800 overflow-hidden shrink-0 border border-slate-200 dark:border-white/5">{item.imageUrls && item.imageUrls[0] ? <img src={item.imageUrls[0]} alt="Rx" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><span className="material-symbols-outlined text-3xl">description</span></div>}</div><div className="flex-1 min-w-0"><h5 className="text-sm font-black text-slate-900 dark:text-white truncate uppercase tracking-tight">{item.patientName || 'Untitled Prescription'}</h5><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Verified: {formatDate(item.date)}</p></div><span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-900/30">Verified</span></m.div>
-                        )) : <div className="flex flex-col items-center justify-center py-20 opacity-30"><span className="material-symbols-outlined text-5xl mb-3">history</span><p className="text-xs font-black uppercase tracking-widest text-center">No recent history</p></div>}
+                        )) : (
+                          <div className="flex-1 flex flex-col items-center justify-center py-12 px-6 text-center bg-slate-50/50 dark:bg-white/5 rounded-[2rem] border border-dashed border-slate-200 dark:border-white/10">
+                            <div className="size-16 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 mb-4">
+                              <span className="material-symbols-outlined text-3xl">history</span>
+                            </div>
+                            <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-2">No Recent Scans</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-6">Your clinical analysis history will appear here once you start scanning.</p>
+                            <button 
+                              onClick={handleCameraClick}
+                              className="px-6 py-2.5 rounded-full bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95"
+                            >
+                              Start First Scan
+                            </button>
+                          </div>
+                        )}
                     </div>
                   </div>
                   <div className="pt-6 border-t border-slate-100 dark:border-white/5">

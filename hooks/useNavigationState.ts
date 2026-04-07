@@ -6,6 +6,7 @@ export const useNavigationState = () => {
   const [appView, setAppView] = useState<AppView>(AppView.LANDING);
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.ANALYZE);
   const [transitionMode, setTransitionMode] = useState<TransitionMode>(TransitionMode.TAB);
+  const [selectedModule, setSelectedModule] = useState<'rx' | 'blood'>('rx');
 
   const navigateToTab = (tab: AppTab, mode: TransitionMode = TransitionMode.TAB) => {
     if (tab !== activeTab) {
@@ -22,6 +23,8 @@ export const useNavigationState = () => {
     appView,
     activeTab,
     transitionMode,
+    selectedModule,
+    setSelectedModule,
     navigateToTab,
     navigateToView,
     setAppView // Exposed for cases where simple state setting is preferred

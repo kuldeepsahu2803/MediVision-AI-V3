@@ -6,6 +6,7 @@ import { formatDate } from '../lib/utils.ts';
 import { AnalyzeIcon } from './icons/AnalyzeIcon.tsx';
 import { PrescriptionSkeleton } from './skeletons/PrescriptionSkeleton.tsx';
 import { motion } from 'framer-motion';
+import { Badge } from './ui/Badge.tsx';
 
 interface ResultsDisplayProps {
   data: PrescriptionData | null;
@@ -24,76 +25,79 @@ const PillIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 const ResultRow: React.FC<{ label: string; value?: string | number }> = ({ label, value }) => {
-    // Don't render if the value is missing or is the default "not mentioned" string.
     const cleanValue = String(value || '').trim();
     if (!cleanValue || cleanValue.toLowerCase() === 'not mentioned' || cleanValue.toLowerCase() === 'n/a') {
       return null;
     }
     
     return (
-      <>
-        <dt className="py-3 text-sm font-medium text-light-text-mid dark:text-dark-text-mid border-b border-light-border/50 dark:border-dark-border/50 whitespace-nowrap">{label}</dt>
-        <dd className="py-3 text-sm text-light-text dark:text-dark-text break-words text-right border-b border-light-border/50 dark:border-dark-border/50">{cleanValue}</dd>
-      </>
+      <div className="flex justify-between items-center py-3 border-b border-slate-100 dark:border-white/10">
+        <dt className="clinical-label mb-0">{label}</dt>
+        <dd className="clinical-value text-right">{cleanValue}</dd>
+      </div>
     );
 };
 
-const MedicationTable: React.FC<{ medicines: Medicine[] }> = ({ medicines }) => {
+const MedicationTable: React.FC<{ medicines: Medicine[]; onVerifyClick: () => void }> = ({ medicines, onVerifyClick }) => {
   if (!medicines || medicines.length === 0) {
-    return <div className="py-4 text-sm text-light-text-mid dark:text-dark-text-mid">No medication details found.</div>;
+    return <div className="py-8 text-center text-sm text-slate-400 font-medium">No medication details found.</div>;
   }
 
   return (
-    <div className="my-4">
-      <div className="overflow-x-auto rounded-lg border border-light-border dark:border-dark-border">
-        <table className="min-w-full">
-          <thead className="bg-black/5 dark:bg-white/5">
-            <tr>
-              <th scope="col" className="px-4 py-2 text-left text-xs font-bold text-light-text-mid dark:text-dark-text-mid uppercase tracking-wider">
-                Medicine
-              </th>
-              <th scope="col" className="px-4 py-2 text-left text-xs font-bold text-light-text-mid dark:text-dark-text-mid uppercase tracking-wider">
-                Dosage
-              </th>
-              <th scope="col" className="px-4 py-2 text-left text-xs font-bold text-light-text-mid dark:text-dark-text-mid uppercase tracking-wider">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-light-border dark:divide-dark-border">
-            {medicines.map((med, index) => {
-              const statusColor = med.verification?.color === 'emerald' ? 'text-emerald-600 dark:text-emerald-400' : 
-                                 med.verification?.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 
-                                 med.verification?.color === 'rose' ? 'text-rose-600 dark:text-rose-400' : 
-                                 'text-slate-500';
-              
-              const statusIcon = med.verification?.color === 'emerald' ? 'check_circle' : 
-                                med.verification?.color === 'amber' ? 'info' : 
-                                med.verification?.color === 'rose' ? 'warning' : 
-                                'help';
+    <div className="my-6 space-y-3">
+      <h4 className="clinical-label mb-2">Medication Regimen</h4>
+      <div className="space-y-2">
+        {medicines.map((med, index) => {
+          const variant = med.verification?.color === 'emerald' ? 'success' : 
+                         med.verification?.color === 'amber' ? 'warning' : 
+                         med.verification?.color === 'rose' ? 'error' : 
+                         'neutral';
+          
+          const statusIcon = med.verification?.color === 'emerald' ? 'check_circle' : 
+                            med.verification?.color === 'amber' ? 'info' : 
+                            med.verification?.color === 'rose' ? 'warning' : 
+                            'help';
 
-              return (
-                <tr key={index} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200">
-                  <td className="px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text">
-                    <div className="flex flex-col">
-                      <span>{med.verification?.normalizedName || med.name || '-'}</span>
-                      {med.verification?.normalizedName && med.verification.normalizedName !== med.name && (
-                        <span className="text-[10px] text-slate-400 italic">Original: {med.name}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-light-text-mid dark:text-dark-text-mid">{med.dosage || '-'}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <div className={`flex items-center gap-1.5 font-bold uppercase tracking-tighter text-[10px] ${statusColor}`}>
-                      <span className="material-symbols-outlined text-[14px]">{statusIcon}</span>
-                      {med.verification?.status?.replace('_', ' ') || 'Unverified'}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          return (
+            <motion.div 
+              key={index}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center justify-between group hover:border-brand-blue/30 transition-all cursor-pointer active:scale-[0.98]"
+              onClick={onVerifyClick}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`size-2 rounded-full animate-pulse-ai ${
+                  med.verification?.color === 'emerald' ? 'bg-brand-green' : 
+                  med.verification?.color === 'amber' ? 'bg-brand-amber' : 
+                  'bg-rose-500'
+                }`} />
+                <div className="flex flex-col">
+                  <span className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight group-hover:text-brand-blue transition-colors">
+                    {med.verification?.normalizedName || med.name || '-'}
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{med.dosage || '-'}</span>
+                    {med.frequency && (
+                      <>
+                        <span className="size-1 rounded-full bg-slate-300" />
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{med.frequency}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <Badge 
+                variant={variant} 
+                size="xs" 
+                icon={<span className="material-symbols-outlined text-[14px]">{statusIcon}</span>}
+              >
+                {med.verification?.status?.replace('_', ' ') || 'Unverified'}
+              </Badge>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
@@ -102,25 +106,32 @@ const MedicationTable: React.FC<{ medicines: Medicine[] }> = ({ medicines }) => 
 export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ data, isLoading, error, hasImage, onVerifyClick, onRetry }) => {
 
   if (isLoading) {
-    return <PrescriptionSkeleton />;
+    return (
+      <div className="relative h-full">
+        <PrescriptionSkeleton />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[2rem]">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-blue to-transparent shadow-[0_0_20px_rgba(0,102,255,0.8)] animate-scan" />
+          <div className="absolute inset-0 bg-brand-blue/5 animate-pulse-ai" />
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center animate-fadeIn p-4">
-        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <div className="flex flex-col items-center justify-center h-full text-center animate-fadeIn p-8">
+        <div className="size-20 bg-rose-500/10 rounded-[2rem] flex items-center justify-center mb-6 text-rose-500 border border-rose-500/20">
+            <span className="material-symbols-outlined text-4xl">report</span>
         </div>
-        <p className="text-lg font-semibold text-red-500 mb-2">Analysis Failed</p>
-        <p className="text-sm text-light-text-mid dark:text-dark-text-mid max-w-md mb-6">{error}</p>
+        <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Analysis Failed</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mb-8 font-medium leading-relaxed">{error}</p>
         
         {onRetry && (
             <motion.button 
                 whileTap={{ scale: 0.96 }}
                 onClick={onRetry}
-                className="btn-secondary px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl"
             >
-                <AnalyzeIcon className="w-4 h-4" />
                 Try Again
             </motion.button>
         )}
@@ -132,38 +143,47 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ data, isLoading,
     const hasNotes = data.notes && data.notes.toLowerCase() !== 'none' && data.notes.trim() !== '' && data.notes.toLowerCase() !== 'no additional notes found.';
     
     return (
-      <div className="flex flex-col h-full animate-fadeIn">
-        <div className="flex items-center gap-3 mb-4">
-          <PillIcon className="w-8 h-8 text-brand-green" />
-          <h3 className="text-lg font-bold text-light-text dark:text-dark-text uppercase tracking-wider">
-            Extracted Information
-          </h3>
+      <div className="flex flex-col h-full animate-fadeIn p-6">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="size-12 rounded-2xl bg-brand-green/10 flex items-center justify-center text-brand-green border border-brand-green/20">
+            <PillIcon className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              Extracted Data
+            </h3>
+            <p className="clinical-label mt-1">Clinical AI Output</p>
+          </div>
         </div>
-        <div className="flex-grow overflow-y-auto pr-2 -mr-4" style={{'scrollbarWidth': 'thin'}}>
-          <dl className="grid grid-cols-[auto,1fr] gap-x-8">
-            <ResultRow label="Patient:" value={data.patientName} />
-            <ResultRow label="Age:" value={data.patientAge} />
-            <ResultRow label="Address:" value={data.patientAddress} />
-            <ResultRow label="Doctor:" value={data.doctorName} />
-            <ResultRow label="Clinic:" value={data.clinicName} />
-            <ResultRow label="Date:" value={formatDate(data.date)} />
-          </dl>
+
+        <div className="flex-grow overflow-y-auto pr-2 -mr-4 no-scrollbar">
+          <div className="glass-panel rounded-[2rem] p-6 mb-6 border border-slate-100 dark:border-white/10">
+            <dl className="space-y-1">
+              <ResultRow label="Patient" value={data.patientName} />
+              <ResultRow label="Age" value={data.patientAge} />
+              <ResultRow label="Doctor" value={data.doctorName} />
+              <ResultRow label="Clinic" value={data.clinicName} />
+              <ResultRow label="Date" value={formatDate(data.date)} />
+            </dl>
+          </div>
           
-          <MedicationTable medicines={data.medication} />
+          <MedicationTable medicines={data.medication} onVerifyClick={onVerifyClick} />
           
            {hasNotes && (
-             <div className="pt-4 mt-4 border-t border-light-border/50 dark:border-dark-border/50">
-              <h4 className="text-sm font-medium text-light-text-mid dark:text-dark-text-mid mb-2">Additional Notes</h4>
-              <p className="text-sm text-light-text dark:text-dark-text break-words">{data.notes}</p>
+             <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 mt-6">
+              <h4 className="clinical-label mb-3">Clinical Notes</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed italic">"{data.notes}"</p>
             </div>
            )}
         </div>
-        <div className="mt-auto pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+
+        <div className="mt-8 pt-6 border-t border-slate-100 dark:border-white/10">
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={onVerifyClick}
-            className="btn-gradient w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-base font-medium rounded-lg shadow-lg text-white"
+            className="w-full py-5 bg-brand-blue text-white rounded-2xl text-sm font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-blue/20 flex items-center justify-center gap-3"
           >
+            <span className="material-symbols-outlined text-[18px]">verified</span>
             Verify & Correct
           </motion.button>
         </div>
@@ -172,13 +192,13 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ data, isLoading,
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center animate-fadeIn">
-       <svg className="w-16 h-16 text-light-text-mid dark:text-dark-text-mid opacity-20" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.375 1.125-1.125-1.125a1.125 1.125 0 0 1 1.625 0l2.25 2.25a1.125 1.125 0 0 1 0 1.591l-2.25 2.25a1.125 1.125 0 0 1-1.625 0l-1.125-1.125m-3.375 0c-.621 0-1.125.504-1.125 1.125v3.375c0 .621.504 1.125 1.125 1.125h3.375c.621 0 1.125-.504 1.125-1.125v-3.375c0-.621-.504-1.125-1.125-1.125h-3.375Z" />
-      </svg>
-      <p className="mt-4 text-lg font-medium text-light-text-mid dark:text-dark-text-mid">Awaiting Analysis</p>
-      <p className="text-sm text-light-text-dark dark:text-dark-text-dark">
-        {hasImage ? 'Click "Analyze Prescription" to begin.' : 'Upload an image of a prescription to start.'}
+    <div className="flex flex-col items-center justify-center h-full text-center animate-fadeIn p-8">
+       <div className="size-20 bg-slate-100 dark:bg-white/5 rounded-[2rem] flex items-center justify-center mb-6 text-slate-300 dark:text-slate-700">
+          <span className="material-symbols-outlined text-4xl">description</span>
+       </div>
+      <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Awaiting Analysis</h3>
+      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs">
+        {hasImage ? 'Click "Analyze Prescription" to begin the clinical extraction process.' : 'Upload an image of a prescription to start the analysis.'}
       </p>
     </div>
   );

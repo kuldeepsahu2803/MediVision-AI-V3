@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { PrescriptionData } from '../types.ts';
+import { PrescriptionData, BloodTestReport } from '../types.ts';
 import { useAuthSession } from './useAuthSession.ts';
 import * as dbService from '../services/databaseService.ts';
+import * as localDB from '../services/localDatabaseService.ts';
 import { syncLocalToCloud } from '../services/syncService.ts';
 
 export const useMedicalHistory = () => {
   const [history, setHistory] = useState<PrescriptionData[]>([]);
+  const [labHistory, setLabHistory] = useState<BloodTestReport[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { isLoggedIn, user, loading: authLoading } = useAuthSession();
   const hasSyncedRef = useRef(false);
@@ -17,15 +19,23 @@ export const useMedicalHistory = () => {
     const loadData = async () => {
       setIsLoadingHistory(true);
       try {
-        if (isLoggedIn && !hasSyncedRef.current) {
-            try {
-                await syncLocalToCloud();
-                hasSyncedRef.current = true;
-            } catch (syncErr) { console.warn("Sync failed, proceeding with local load."); }
+        // 1. Load local/cached data immediately for responsiveness
+        const initialData = await dbService.getAllPrescriptions();
+        const initialLabs = await localDB.getLabsFromLocalDB();
+        if (mounted) {
+          setHistory(initialData || []);
+          setLabHistory(initialLabs || []);
         }
         
-        const dbData = await dbService.getAllPrescriptions();
-        if (mounted) setHistory(dbData || []);
+        // 2. Background sync if logged in
+        if (isLoggedIn && !hasSyncedRef.current) {
+            // Background sync: don't await to avoid blocking initial UI
+            syncLocalToCloud().then(async () => {
+                hasSyncedRef.current = true;
+                const fresh = await dbService.getAllPrescriptions();
+                if (mounted) setHistory(fresh || []);
+            }).catch(syncErr => console.warn("Background sync failed", syncErr));
+        }
       } catch (e) {
         console.error("Critical Failure: Medical History Loader:", e);
       } finally {
@@ -55,11 +65,34 @@ export const useMedicalHistory = () => {
     } catch (e) { console.error("Database Save Failure:", e); }
   };
 
+  const saveLabToHistory = async (dataToSave: BloodTestReport) => {
+    setLabHistory(prev => [dataToSave, ...prev]);
+    try {
+      await localDB.saveLabToLocalDB(dataToSave);
+      const fresh = await localDB.getLabsFromLocalDB();
+      setLabHistory(fresh || []);
+    } catch (e) { console.error("Lab Save Failure:", e); }
+  };
+
   const deleteFromHistory = async (idToDelete: string) => {
     setHistory(prev => prev.filter(h => h.id !== idToDelete));
     try { await dbService.deletePrescription(idToDelete); } 
     catch (e) { console.error("Database Delete Failure:", e); }
   };
 
-  return { history, saveToHistory, deleteFromHistory, isLoadingHistory };
+  const deleteLabFromHistory = async (idToDelete: string) => {
+    setLabHistory(prev => prev.filter(h => h.id !== idToDelete));
+    try { await localDB.deleteLabFromLocalDB(idToDelete); }
+    catch (e) { console.error("Lab Delete Failure:", e); }
+  };
+
+  return { 
+    history, 
+    labHistory, 
+    saveToHistory, 
+    saveLabToHistory, 
+    deleteFromHistory, 
+    deleteLabFromHistory, 
+    isLoadingHistory 
+  };
 };

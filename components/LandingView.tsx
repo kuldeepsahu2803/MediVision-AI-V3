@@ -152,7 +152,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5">
               <button 
                 onClick={onStart}
-                className="bg-emerald-500 text-white px-10 py-5 rounded-full text-lg font-black shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 hover:bg-emerald-600 transition-all flex items-center gap-3"
+                className="bg-emerald-500 text-white px-10 py-5 rounded-full text-lg font-black shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 hover:bg-emerald-600 transition-all flex items-center gap-3 animate-glimmer"
               >
                 Enter Clinical Portal
                 <RocketIcon />
@@ -189,7 +189,11 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                 className="relative transform rotate-y-[-10deg] rotate-x-[5deg] transition-all duration-1000 hover:rotate-0 hover:scale-[1.02] w-full h-full"
                 style={{ transformStyle: 'preserve-3d' }}
             >
-              <div className="glass-panel rounded-[3rem] p-3 shadow-2xl border-white/50 dark:border-white/10 bg-white/40 dark:bg-slate-900/60 backdrop-blur-3xl h-full flex flex-col overflow-hidden">
+              <div className="glass-panel rounded-[3rem] p-3 shadow-2xl border-white/50 dark:border-white/10 bg-white/40 dark:bg-slate-900/60 backdrop-blur-3xl h-full flex flex-col overflow-hidden relative">
+                {/* Scan Line Effect */}
+                <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[3rem]">
+                  <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent absolute top-0 animate-scan shadow-[0_0_15px_rgba(34,211,238,0.5)]"></div>
+                </div>
                 <div className="bg-slate-50 dark:bg-slate-950 rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-slate-800 flex-1 flex flex-col">
                   <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
                     <div className="flex gap-2">
@@ -295,19 +299,19 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <FeatureCard 
-                title="AI Extraction" desc="Handwriting analysis and digitization powered by advanced vision models."
+                title="Reasoning Trace" desc="Transparency into AI logic. See exactly how the engine interpreted difficult handwriting."
                 icon={<RocketIcon />} color="text-cyan-500" bg="bg-cyan-50 dark:bg-cyan-900/20" delay={0.1}
             />
             <FeatureCard 
-                title="Safety Checks" desc="Real-time drug interaction and dosage analysis warnings."
+                title="Confidence Heatmap" desc="Visual confidence scores mapped directly to the original prescription ink."
                 icon={<PlayIcon />} color="text-rose-500" bg="bg-rose-50 dark:bg-rose-900/20" delay={0.2}
             />
             <FeatureCard 
-                title="Audit Trails" desc="Immutable, HIPAA-compliant logs of every clinical action."
+                title="Audit Trails" desc="Immutable, HIPAA-compliant logs of every clinical action and modification."
                 icon={<RocketIcon />} color="text-cyan-500" bg="bg-cyan-50 dark:bg-cyan-900/20" delay={0.3}
             />
             <FeatureCard 
-                title="Pharmacy Sync" desc="Seamless connection to major PMS and EHR platforms via clinical APIs."
+                title="Safety Checks" desc="Real-time drug interaction and dosage analysis warnings via RxNorm."
                 icon={<PlayIcon />} color="text-rose-500" bg="bg-rose-50 dark:bg-rose-900/20" delay={0.4}
             />
           </div>

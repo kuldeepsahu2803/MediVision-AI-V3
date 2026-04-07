@@ -54,9 +54,12 @@ const fetchWithRetry = async (url: string, retries = 3, backoff = 500): Promise<
 
       circuitBreaker.reset();
       return response;
-    } catch (e) {
+    } catch (e: any) {
       if (i === retries - 1) {
         circuitBreaker.recordFailure();
+        if (e.message?.includes('Failed to fetch')) {
+          throw new Error('Network error: Could not connect to RxNorm API. Please check your internet connection.');
+        }
         throw e;
       }
       const delay = backoff * Math.pow(2, i) + Math.random() * 100;

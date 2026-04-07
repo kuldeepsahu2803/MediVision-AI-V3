@@ -144,7 +144,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({ onSelectService, onB
       title: 'Blood Test Report', 
       icon: 'bloodtype', 
       desc: 'Automated extraction and trend analysis for clinical hematology and biochemistry data.', 
-      active: false 
+      active: true 
     },
     { 
       id: 'mri', 

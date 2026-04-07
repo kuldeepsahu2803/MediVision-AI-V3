@@ -5,8 +5,13 @@ import { getPDFFile } from '../lib/pdfUtils.ts';
 // Helper to check if string is a valid UUID
 const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
-const dataURLToBlob = (dataURL: string): Blob => {
-  const parts = dataURL.split(',');
+const dataURLToBlob = async (url: string): Promise<Blob> => {
+  if (url.startsWith('blob:')) {
+    const response = await fetch(url);
+    return await response.blob();
+  }
+  
+  const parts = url.split(',');
   const mimeMatch = parts[0].match(/:(.*?);/);
   const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
   const bstr = atob(parts[1]);
@@ -34,7 +39,7 @@ export const uploadPrescriptionAssets = async (userId: string, data: Prescriptio
         const url = data.imageUrls[0];
         if (url.startsWith('data:') || url.startsWith('blob:')) {
             try {
-                const blob = dataURLToBlob(url);
+                const blob = await dataURLToBlob(url);
                 const fileName = `${userId}/${safeId}_image.png`;
                 
                 const { error: uploadError } = await supabase.storage

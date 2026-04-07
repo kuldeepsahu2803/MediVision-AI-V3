@@ -130,7 +130,7 @@ export const RoleSelectionView: React.FC<RoleSelectionViewProps> = ({ onSelectRo
             </div>
 
             <div className="w-full space-y-4">
-              <button className="w-full px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-rose-500 text-white font-black text-sm shadow-xl shadow-rose-500/20 group-hover:shadow-rose-500/40 transition-all duration-300">
+              <button className="w-full px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-rose-500 text-white font-black text-sm shadow-xl shadow-rose-500/20 group-hover:shadow-rose-500/40 transition-all duration-300 animate-glimmer">
                 Sign in to Portal
               </button>
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30">

@@ -358,7 +358,7 @@ export const TreatmentsView: React.FC<{ prescription: PrescriptionData | null }>
               </div>
 
               <div className="mt-16 flex flex-wrap gap-4">
-                <div className="px-6 py-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center gap-3 shadow-sm">
+                <div className="px-6 py-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center gap-3 shadow-sm animate-pulse-ai">
                     <span className="size-2.5 rounded-full bg-cyan-500 animate-pulse"></span>
                     <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Confidence Score: High</span>
                 </div>
@@ -405,7 +405,7 @@ export const TreatmentsView: React.FC<{ prescription: PrescriptionData | null }>
 
               <button 
                 onClick={() => { triggerHaptic('medium'); exportSinglePDF(prescription); }}
-                className="w-full rounded-[1.5rem] bg-slate-900 dark:bg-white py-5 text-sm font-black text-white dark:text-slate-900 hover:shadow-glow-blue transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest border border-transparent dark:border-white/10"
+                className="w-full rounded-[1.5rem] bg-slate-900 dark:bg-white py-5 text-sm font-black text-white dark:text-slate-900 hover:shadow-glow-blue transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest border border-transparent dark:border-white/10 animate-glimmer"
               >
                 Export Clinical Report
                 <span className="material-symbols-outlined text-sm">download</span>

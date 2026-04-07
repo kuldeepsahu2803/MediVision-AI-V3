@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnalyzeView } from './components/AnalyzeView.tsx';
+import { LabsView } from './components/LabsView.tsx';
 import { ReviewView } from './components/ReviewView.tsx';
 import { ReportsView } from './components/ReportsView.tsx';
 import { TreatmentsView } from './components/TreatmentsView.tsx';
@@ -28,19 +29,27 @@ export type ToastItem = { id: string; message: string; type: ToastType };
 type UserRole = 'guest' | 'professional' | null;
 
 const App: React.FC = () => {
-  const { appView, activeTab, transitionMode, navigateToTab, navigateToView } = useNavigationState();
+  const { appView, activeTab, transitionMode, selectedModule, setSelectedModule, navigateToTab, navigateToView } = useNavigationState();
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [showTreatments, setShowTreatments] = useState(true);
 
-  const { user, isLoggedIn, logout, loading: authLoading, cloudStatus } = useAuthSession();
+  const { user, isLoggedIn, logout, loading: authLoading, error: authError, cloudStatus } = useAuthSession();
   const medicalHistory = useMedicalHistory();
   const analysisEngine = useAnalysisEngine(isLoggedIn);
   const { triggerHaptic } = useHaptic();
   
-  const { history, isLoadingHistory } = medicalHistory;
+  const { 
+    history, 
+    labHistory, 
+    saveToHistory, 
+    saveLabToHistory, 
+    deleteFromHistory, 
+    deleteLabFromHistory, 
+    isLoadingHistory 
+  } = medicalHistory;
   const { imageFiles, imageUrls, prescriptionData, setPrescriptionData, isLoading, error, addImages, removeImage, clear, analyze } = analysisEngine;
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
@@ -51,6 +60,12 @@ const App: React.FC = () => {
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
+
+  useEffect(() => {
+    if (authError) {
+      showToast(authError, 'error');
+    }
+  }, [authError, showToast]);
 
   const { handleAnalyzeClick, handleSaveReview, handleVerify, handleDeleteReport } = useAppWorkflow({
       userRole,
@@ -90,18 +105,31 @@ const App: React.FC = () => {
   
   const displayHistory = userRole === 'guest' ? (prescriptionData ? [prescriptionData] : []) : history;
 
+  const currentMeds = history.flatMap(p => p.medication.map(m => m.name));
+
   const renderContent = () => {
     switch(activeTab) {
       case AppTab.REVIEW:
         return <ReviewView prescription={prescriptionData} imageUrls={imageUrls.length > 0 ? imageUrls : null} onSave={handleSaveReview} onVerify={handleVerify} />;
+      case AppTab.LABS:
+        return (
+          <LabsView 
+            history={labHistory} 
+            currentMeds={currentMeds} 
+            onSave={saveLabToHistory} 
+            onDelete={deleteLabFromHistory} 
+          />
+        );
       case AppTab.REPORTS:
         return (
           <ReportsView 
             history={displayHistory} 
+            labHistory={labHistory}
             isLoading={isLoadingHistory} 
             onSelectPrescription={(p) => { setPrescriptionData(p); navigateToTab(AppTab.REVIEW, TransitionMode.DRILL); }} 
             onDeleteReport={handleDeleteReport} 
-            onNavigateToAnalyze={() => navigateToTab(AppTab.ANALYZE, TransitionMode.TAB)}
+            onDeleteLab={deleteLabFromHistory}
+            onNavigateToAnalyze={() => navigateToTab(selectedModule === 'rx' ? AppTab.ANALYZE : AppTab.LABS, TransitionMode.TAB)}
           />
         );
       case AppTab.TREATMENTS:
@@ -163,40 +191,94 @@ const App: React.FC = () => {
                 <Spinner />
             </motion.div>
         ) : (
-            <React.Fragment>
-                {appView === AppView.LANDING && (<motion.div key="landing" exit={{ opacity: 0, scale: 0.95 }} className="w-full h-full flex flex-col"><LandingView onStart={() => navigateToView(AppView.ROLE_SELECTION)} /></motion.div>)}
-                {appView === AppView.ROLE_SELECTION && (<motion.div key="roles" exit={{ opacity: 0, scale: 0.95 }} className="w-full h-full"><RoleSelectionView onSelectRole={handleRoleSelection} onBack={() => navigateToView(AppView.LANDING)} /></motion.div>)}
-                {appView === AppView.SERVICES && (<motion.div key="services" exit={{ opacity: 0, scale: 0.95 }} className="w-full h-full"><ServicesView onSelectService={(s) => { if (s === 'rx') navigateToView(AppView.APP); else showToast('Coming soon!', 'info'); }} onBack={() => navigateToView(AppView.ROLE_SELECTION)} /></motion.div>)}
-                {appView === AppView.APP && (
-                    <AppLayout 
-                      activeTab={activeTab} 
-                      setActiveTab={(t) => navigateToTab(t, TransitionMode.TAB)} 
-                      isLoggedIn={isLoggedIn} 
-                      isGuest={userRole === 'guest'}
-                      hasData={!!prescriptionData}
-                      user={user} 
-                      history={displayHistory} 
-                      showTreatments={showTreatments} 
-                      setShowTreatments={setShowTreatments} 
-                      isMenuOpen={isMenuOpen} 
-                      setIsMenuOpen={setIsMenuOpen} 
-                      setShowLoginModal={setShowLoginModal} 
-                      showToast={showToast} 
-                      onLogout={handleLogout} 
-                      onLogoClick={() => navigateToView(AppView.SERVICES)} 
-                      triggerHaptic={triggerHaptic}
-                      cloudStatus={cloudStatus}
+            <>
+                {appView === AppView.LANDING && (
+                    <motion.div 
+                        key="landing" 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }} 
+                        className="w-full h-full flex flex-col"
                     >
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-grow w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-                            <AnimatePresence mode="wait">
-                                <PageTransition key={activeTab} mode={transitionMode}>
-                                    {renderContent()}
-                                </PageTransition>
-                            </AnimatePresence>
-                        </motion.div>
-                    </AppLayout>
+                        <LandingView onStart={() => navigateToView(AppView.ROLE_SELECTION)} />
+                    </motion.div>
                 )}
-            </React.Fragment>
+                {appView === AppView.ROLE_SELECTION && (
+                    <motion.div 
+                        key="roles" 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }} 
+                        className="w-full h-full"
+                    >
+                        <RoleSelectionView onSelectRole={handleRoleSelection} onBack={() => navigateToView(AppView.LANDING)} />
+                    </motion.div>
+                )}
+                {appView === AppView.SERVICES && (
+                    <motion.div 
+                        key="services" 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }} 
+                        className="w-full h-full"
+                    >
+                        <ServicesView 
+                          onSelectService={(s) => { 
+                            if (s === 'rx') {
+                              setSelectedModule('rx');
+                              navigateToView(AppView.APP);
+                              navigateToTab(AppTab.ANALYZE, TransitionMode.TAB);
+                            } else if (s === 'blood') {
+                              setSelectedModule('blood');
+                              navigateToView(AppView.APP);
+                              navigateToTab(AppTab.LABS, TransitionMode.TAB);
+                            } else {
+                              showToast('Coming soon!', 'info');
+                            }
+                          }} 
+                          onBack={() => navigateToView(AppView.ROLE_SELECTION)} 
+                        />
+                    </motion.div>
+                )}
+                {appView === AppView.APP && (
+                    <motion.div
+                        key="app-container"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="w-full h-full"
+                    >
+                        <AppLayout 
+                          activeTab={activeTab} 
+                          setActiveTab={(t) => navigateToTab(t, TransitionMode.TAB)} 
+                          isLoggedIn={isLoggedIn} 
+                          isGuest={userRole === 'guest'}
+                          hasData={!!prescriptionData}
+                          user={user} 
+                          history={displayHistory} 
+                          showTreatments={showTreatments} 
+                          setShowTreatments={setShowTreatments} 
+                          isMenuOpen={isMenuOpen} 
+                          setIsMenuOpen={setIsMenuOpen} 
+                          setShowLoginModal={setShowLoginModal} 
+                          showToast={showToast} 
+                          onLogout={handleLogout} 
+                          onLogoClick={() => navigateToView(AppView.SERVICES)} 
+                          triggerHaptic={triggerHaptic}
+                          cloudStatus={cloudStatus}
+                          selectedModule={selectedModule}
+                        >
+                            <div className="flex-grow w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+                                <AnimatePresence mode="wait">
+                                    <PageTransition key={activeTab} mode={transitionMode}>
+                                        {renderContent()}
+                                    </PageTransition>
+                                </AnimatePresence>
+                            </div>
+                        </AppLayout>
+                    </motion.div>
+                )}
+            </>
         )}
       </AnimatePresence>
     </div>

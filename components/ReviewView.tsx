@@ -1,6 +1,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { PrescriptionData, Medicine, VerificationResult, RxNormCandidate, AuditEntry } from '../types.ts';
+import { PatientContextHeader } from './clinical/PatientContextHeader.tsx';
+import { ConfidenceBadge } from './clinical/ConfidenceBadge.tsx';
+import { ClinicalAlertBanner } from './clinical/ClinicalAlertBanner.tsx';
 import { Spinner } from './Spinner.tsx';
 import { LockClosedIcon } from './icons/LockClosedIcon.tsx';
 import { ShareIcon } from './icons/ShareIcon.tsx';
@@ -12,6 +15,10 @@ import { useHaptic } from '../hooks/useHaptic.ts';
 import { AutocompleteInput } from './ui/AutocompleteInput.tsx';
 import { FEATURE_FLAGS } from '../lib/featureFlags.ts';
 import { HoldToConfirmButton } from './ui/HoldToConfirmButton.tsx';
+import { Badge } from './ui/Badge.tsx';
+import { HeaderCard } from './HeaderCard.tsx';
+import { PrescriptionImage } from './PrescriptionImage.tsx';
+import { Stepper } from './ui/Stepper.tsx';
 
 // --- Clinical Verification Icons ---
 
@@ -37,6 +44,12 @@ const EyeSlashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
     </svg>
+);
+
+const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+  </svg>
 );
 
 // --- Sub-components ---
@@ -90,12 +103,12 @@ const AuditTrailModal: React.FC<{ trail: AuditEntry[], onClose: () => void }> = 
 };
 
 const StatusBadge: React.FC<{ status: PrescriptionData['status'] }> = ({ status }) => {
-    const styles = {
-        'AI-Extracted': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-        'User-Corrected': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800',
-        'Clinically-Verified': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    const variants: Record<PrescriptionData['status'], any> = {
+        'AI-Extracted': 'info',
+        'User-Corrected': 'warning',
+        'Clinically-Verified': 'success',
     };
-    return <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border ${styles[status]}`}>{status.replace('-', ' ')}</span>;
+    return <Badge variant={variants[status]} size="xs">{status.replace('-', ' ')}</Badge>;
 };
 
 const VerificationStatusBadge: React.FC<{ 
@@ -109,19 +122,29 @@ const VerificationStatusBadge: React.FC<{
 
     if (humanConfirmed) {
         return (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm">
-                <VerifiedShield className="w-3.5 h-3.5" />
-                Human Verified
-            </div>
+            <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+                className="focus:outline-none"
+            >
+                <Badge 
+                    variant="success" 
+                    size="xs" 
+                    icon={<VerifiedShield className="w-3.5 h-3.5" />}
+                    className="shadow-sm animate-glimmer cursor-pointer"
+                >
+                    Human Verified
+                </Badge>
+            </motion.button>
         );
     }
 
     const config = {
-        'cyan': { icon: ReviewEye, text: 'DB Match', bg: 'bg-cyan-50 text-cyan-700 border-cyan-200', tooltip: 'High confidence RxNorm match. Human sign-off required.' },
-        'amber': { icon: ReviewEye, text: 'Tentative', bg: 'bg-amber-50 text-amber-700 border-amber-200', tooltip: 'Variant detected. Click bounding box to verify ink.' },
-        'rose': { icon: AlertShield, text: 'Review', bg: 'bg-rose-50 text-rose-700 border-rose-200', tooltip: 'Safety flag: Ambiguous ink or invalid strength.' },
-        'gray': { icon: ReviewEye, text: 'AI Guess', bg: 'bg-slate-50 text-slate-600 border-slate-200', tooltip: 'Raw extraction. No database match found.' },
-        'emerald': { icon: VerifiedShield, text: 'Verified', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', tooltip: 'Human confirmed.' }
+        'cyan': { variant: 'info' as const, icon: ReviewEye, text: 'DB Match', tooltip: 'High confidence RxNorm match. Human sign-off required.' },
+        'amber': { variant: 'warning' as const, icon: ReviewEye, text: 'Tentative', tooltip: 'Variant detected. Click bounding box to verify ink.' },
+        'rose': { variant: 'error' as const, icon: AlertShield, text: 'Review', tooltip: 'Safety flag: Ambiguous ink or invalid strength.' },
+        'gray': { variant: 'neutral' as const, icon: ReviewEye, text: 'AI Guess', tooltip: 'Raw extraction. No database match found.' },
+        'emerald': { variant: 'success' as const, icon: VerifiedShield, text: 'Verified', tooltip: 'Human confirmed.' }
     };
 
     const style = config[result.color] || config['gray'];
@@ -132,10 +155,16 @@ const VerificationStatusBadge: React.FC<{
             <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border ${style.bg} hover:brightness-95 transition-all`} 
+                className="focus:outline-none"
             >
-                <Icon className="w-3.5 h-3.5" />
-                {style.text}
+                <Badge 
+                    variant={style.variant} 
+                    size="xs" 
+                    icon={<Icon className="w-3.5 h-3.5" />}
+                    className="hover:brightness-95 transition-all cursor-pointer animate-pulse-ai"
+                >
+                    {style.text}
+                </Badge>
             </motion.button>
             
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-zinc-900 text-white text-[9px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl z-50">
@@ -159,7 +188,7 @@ const EditableField: React.FC<{
 }> = ({ label, value, onChange, multiline, disabled, rightElement, onFocus, onBlur, placeholder }) => {
     return (
         <div className="mb-3">
-            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between items-center h-5">
+            <label className="clinical-label">
                 {label} 
                 {rightElement}
             </label>
@@ -286,6 +315,71 @@ const ResolutionModal: React.FC<{
     );
 };
 
+const ConfidenceIndicator: React.FC<{ confidence?: number }> = ({ confidence }) => {
+    if (confidence === undefined) return null;
+    const variant = confidence > 0.85 ? 'success' : confidence > 0.6 ? 'warning' : 'error';
+    const label = confidence > 0.85 ? 'High' : confidence > 0.6 ? 'Medium' : 'Low';
+    
+    return (
+        <Badge variant={variant} size="xs" className="ml-3 shrink-0">
+            {label} ({Math.round(confidence * 100)}%)
+        </Badge>
+    );
+};
+
+const ReasoningTrace: React.FC<{ reasoning?: string, verification?: VerificationResult }> = ({ reasoning, verification }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const hasIssues = verification?.issues && verification.issues.length > 0;
+    if (!reasoning && !hasIssues) return null;
+
+    return (
+        <div className="mt-2 border-t border-slate-100 dark:border-white/5 pt-2">
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-brand-blue hover:opacity-80 transition-opacity"
+            >
+                <span className="material-symbols-outlined text-[14px]">{isOpen ? 'keyboard_arrow_up' : 'psychology'}</span>
+                {isOpen ? 'Hide Reasoning' : 'View Reasoning Trace'}
+                {hasIssues && <span className="size-1.5 rounded-full bg-rose-500 animate-pulse ml-1" />}
+            </button>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="mt-2 space-y-2 pl-5 border-l-2 border-brand-blue/20">
+                            {reasoning && (
+                                <div>
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Extraction Logic</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 italic leading-relaxed">
+                                        {reasoning}
+                                    </p>
+                                </div>
+                            )}
+                            {hasIssues && (
+                                <div>
+                                    <p className="text-[8px] font-black text-rose-400 uppercase tracking-widest mb-0.5">Clinical Flags</p>
+                                    <ul className="space-y-1">
+                                        {verification.issues.map((issue, idx) => (
+                                            <li key={idx} className="text-[10px] text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1.5">
+                                                <span className="material-symbols-outlined text-[12px]">warning</span>
+                                                {issue}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 // --- Main View Component ---
 
 interface ReviewViewProps {
@@ -386,6 +480,21 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       });
   };
 
+  const handleDeleteMed = (index: number) => {
+      if (!editableData) return;
+      triggerHaptic('medium');
+      const newMed = [...editableData.medication];
+      newMed.splice(index, 1);
+      setEditableData(prev => prev ? { ...prev, medication: newMed } : null);
+  };
+
+  const handleAddMed = () => {
+      if (!editableData) return;
+      triggerHaptic('light');
+      const newMed = [...editableData.medication, { name: '', dosage: '', frequency: '', duration: '', humanConfirmed: false }];
+      setEditableData(prev => prev ? { ...prev, medication: newMed } : null);
+  };
+
   const handleResolutionSelect = (index: number, newName: string) => {
       handleMedChange(index, 'name', newName);
       setResolutionTarget(null);
@@ -453,44 +562,12 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
   };
 
   const renderImageViewer = () => (
-      <div className="relative w-full h-full overflow-hidden bg-black/5 dark:bg-black/30 flex items-center justify-center rounded-2xl group border border-white/20 dark:border-white/5 min-h-[350px] aspect-square lg:aspect-auto">
-          {imageUrls && (
-              <motion.div className="relative max-w-full max-h-full" animate={transform} transition={{ type: "spring", stiffness: 300, damping: 30 }}>
-                  <img src={imageUrls[0]} className={`max-h-full max-w-full object-contain shadow-2xl rounded-lg transition-all duration-300`} style={{ filter: showOriginalImage ? 'none' : getFilterString() }} alt="Prescription Source" />
-                  {!showOriginalImage && (
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 1000" preserveAspectRatio="none">
-                          {editableData?.medication.map((med, i) => (
-                              med.coordinates && (
-                                <motion.rect key={i} initial={{ opacity: 0 }} animate={{ opacity: i === activeMedIndex ? 1 : 0.3, strokeWidth: i === activeMedIndex ? 4 : 1, fillOpacity: i === activeMedIndex ? 0.2 : 0 }}
-                                    x={med.coordinates[1]} y={med.coordinates[0]} width={med.coordinates[3] - med.coordinates[1]} height={med.coordinates[2] - med.coordinates[0]}
-                                    fill={i === activeMedIndex ? (med.verification?.color === 'rose' ? '#EF4444' : '#007ACC') : "transparent"} stroke={i === activeMedIndex ? (med.verification?.color === 'rose' ? '#EF4444' : '#007ACC') : "#3DA35D"} vectorEffect="non-scaling-stroke"
-                                 />
-                              )
-                          ))}
-                      </svg>
-                  )}
-              </motion.div>
-          )}
-           <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-               <motion.button whileTap={{ scale: 0.9 }} onClick={() => { triggerHaptic('light'); setShowImageControls(!showImageControls); }} className={`p-2 rounded-full shadow-lg backdrop-blur-md border border-white/20 transition-colors ${showImageControls ? 'bg-brand-blue text-white' : 'bg-black/40 text-white'}`}>
-                   <AdjustmentsIcon className="w-5 h-5" />
-               </motion.button>
-               <AnimatePresence>
-                   {showImageControls && (
-                       <motion.div initial={{ opacity: 0, scale: 0.8, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8, y: -10 }} className="flex flex-col gap-2 bg-black/60 backdrop-blur-md p-2 rounded-lg border border-white/10">
-                           <button onClick={() => { triggerHaptic('light'); setImageFilters(p => ({...p, grayscale: !p.grayscale})); }} className={`text-[10px] px-2 py-1 rounded ${imageFilters.grayscale ? 'bg-white text-black' : 'text-white hover:bg-white/10'}`}>B&W</button>
-                           <button onClick={() => { triggerHaptic('light'); setImageFilters(p => ({...p, contrast: !p.contrast})); }} className={`text-[10px] px-2 py-1 rounded ${imageFilters.contrast ? 'bg-white text-black' : 'text-white hover:bg-white/10'}`}>Contrast</button>
-                           <button onClick={() => { triggerHaptic('light'); setImageFilters(p => ({...p, brightness: !p.brightness})); }} className={`text-[10px] px-2 py-1 rounded ${imageFilters.brightness ? 'bg-white text-black' : 'text-white hover:bg-white/10'}`}>Bright</button>
-                       </motion.div>
-                   )}
-               </AnimatePresence>
-           </div>
-           <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-3 pointer-events-auto">
-               <button aria-label="Hold to view original image" className="bg-white/90 dark:bg-black/90 text-gray-800 dark:white p-2 rounded-full shadow-lg" onMouseDown={() => setShowOriginalImage(true)} onMouseUp={() => setShowOriginalImage(false)} onTouchStart={() => setShowOriginalImage(true)} onTouchEnd={() => setShowOriginalImage(false)}>
-                   <EyeSlashIcon className="w-5 h-5" />
-               </button>
-          </div>
-      </div>
+      <PrescriptionImage 
+          imageUrls={imageUrls} 
+          medications={editableData?.medication || []} 
+          activeMedIndex={activeMedIndex}
+          onMedClick={(i) => setActiveMedIndex(i)}
+      />
   );
 
   const renderForm = () => {
@@ -499,151 +576,270 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       const hasGeneral = suggestions?.generalRecommendations && suggestions.generalRecommendations.length > 0;
       const hasAnySuggestions = hasCritical || hasGeneral;
 
+      const verificationSteps = [
+          { id: 'ocr', label: 'Handwriting Extraction', status: isVerifying ? 'loading' : 'completed' as const },
+          { id: 'rxnorm', label: 'Clinical Database Match', status: isVerifying ? 'pending' : 'completed' as const },
+          { id: 'safety', label: 'Drug Interaction Check', status: isVerifying ? 'pending' : 'completed' as const },
+      ];
+
       return (
-        <div className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Rx Details</h2>
-                <div className="flex items-center gap-3">
-                    <button onClick={() => { triggerHaptic('light'); setShowAuditModal(true); }} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-brand-blue" title="View Audit Trail">
-                        <HistoryIcon className="w-5 h-5" />
-                    </button>
-                    {isVerifying && <Spinner className="w-4 h-4 text-brand-blue" />}
-                    {editableData && <StatusBadge status={editableData.status} />}
-                </div>
-            </div>
-            <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <EditableField label="Patient Name" value={editableData?.patientName || ''} onChange={v => handleFieldChange('patientName', v)} />
-                    <EditableField label="Date" value={editableData?.date || ''} onChange={v => handleFieldChange('date', v)} placeholder="YYYY-MM-DD" />
-                </div>
-                <EditableField label="Prescriber" value={editableData?.doctorName || ''} onChange={v => handleFieldChange('doctorName', v)} />
-                
-                <div className="border-t border-slate-200 dark:border-slate-700 opacity-50 my-4" />
-                
-                <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Active Regimen</h3>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-white/5 px-3 py-1 rounded-full border border-slate-100 dark:border-white/5">
-                        {editableData?.medication.length} Agents Identified
-                    </div>
-                </div>
+          <div className="p-6 space-y-8">
+              <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Review Order</h2>
+                  <div className="flex items-center gap-3">
+                      <button 
+                          onClick={() => { triggerHaptic('light'); setShowAuditModal(true); }} 
+                          className="size-11 flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-brand-blue" 
+                          title="View Audit Trail"
+                      >
+                          <HistoryIcon className="w-6 h-6" />
+                      </button>
+                      {editableData && <StatusBadge status={editableData.status} />}
+                  </div>
+              </div>
 
-                {editableData?.medication.map((med, i) => (
-                <motion.div 
-                    key={i} 
-                    animate={{ borderColor: i === activeMedIndex ? '#007ACC' : 'rgba(0, 122, 204, 0)' }} 
-                    className={`p-4 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border transition-all duration-300 ${i === activeMedIndex ? 'border-brand-blue ring-1 ring-brand-blue/20 shadow-lg' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'} space-y-3 relative overflow-hidden`}
-                >
-                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${med.humanConfirmed ? 'bg-emerald-500' : (med.verification?.color === 'rose' ? 'bg-rose-500' : (med.verification?.color === 'amber' ? 'bg-amber-500' : 'bg-slate-300'))}`} />
-                        
-                        <div className="pl-2">
-                            <AutocompleteInput 
-                                label="Clinical Label" 
-                                value={med.name} 
-                                onChange={v => handleMedChange(i, 'name', v)} 
-                                fetchSuggestions={async (q) => { 
-                                    const { getDrugSuggestions } = await import('../services/openFdaService.ts'); 
-                                    const res = await getDrugSuggestions(q); 
-                                    return res.map(r => r.standardName || r.brandName || r.genericName || ''); 
-                                }} 
-                                onFocus={() => setActiveMedIndex(i)} 
-                                onBlur={() => setActiveMedIndex(null)} 
-                                rightElement={
-                                    <VerificationStatusBadge 
-                                        isReverifying={reverifyingIndex === i} 
-                                        result={med.verification} 
-                                        humanConfirmed={med.humanConfirmed}
-                                        onClick={() => { 
-                                            const v = med.verification;
-                                            // CLINICAL REQUIREMENT: Gate candidates resolution to amber/rose with actionable data
-                                            if (v && (v.color === 'amber' || v.color === 'rose') && v.candidates?.length > 0) { 
-                                                triggerHaptic('medium');
-                                                setResolutionTarget({ index: i, candidates: v.candidates }); 
-                                            } else {
-                                                handleSignOff(i);
-                                            }
-                                        }} 
-                                    />
-                                } 
-                            />
-                        </div>
+              {isVerifying && (
+                  <div className="p-6 rounded-[2.5rem] bg-brand-blue/5 border border-brand-blue/10">
+                      <Stepper steps={verificationSteps} currentStepIndex={0} />
+                  </div>
+              )}
 
-                        <div className="grid grid-cols-3 gap-3 pl-2">
-                            <EditableField label="Strength" value={med.dosage} onChange={v => handleMedChange(i, 'dosage', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)} />
-                            <EditableField label="Freq" value={med.frequency} onChange={v => handleMedChange(i, 'frequency', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
-                            <EditableField label="Route" value={med.route || ''} onChange={v => handleMedChange(i, 'route', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
-                        </div>
+              <HeaderCard 
+                  patientName={editableData?.patientName || ''}
+                  date={editableData?.date || ''}
+                  doctorName={editableData?.doctorName || ''}
+                  patientNameConfidence={editableData?.patientNameConfidence}
+                  dateConfidence={editableData?.dateConfidence}
+                  doctorNameConfidence={editableData?.doctorNameConfidence}
+              />
 
-                        {!med.humanConfirmed && (
-                            <div className="pl-2 mt-2">
-                                <button 
-                                    onClick={() => handleSignOff(i)}
-                                    className="w-full py-1.5 rounded-lg border border-brand-blue/20 bg-brand-blue/5 text-[10px] font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all"
-                                >
-                                    Sign-off Line {i + 1}
-                                </button>
-                            </div>
-                        )}
-                    </motion.div>
-                ))}
+              <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                      <h3 className="clinical-label">Medication Regimen</h3>
+                      <Badge variant="neutral" size="xs">
+                          {editableData?.medication.length} Items
+                      </Badge>
+                  </div>
 
-                <AnimatePresence>
-                    {hasAnySuggestions && showAiSuggestions && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="mt-8 p-6 rounded-[2rem] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 relative overflow-hidden shadow-sm"
-                        >
-                            <button 
-                                onClick={() => { triggerHaptic('light'); setShowAiSuggestions(false); }}
-                                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-slate-400"
-                                aria-label="Dismiss AI Insights"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">close</span>
-                            </button>
+                  <div className="space-y-4">
+                      {editableData?.medication.map((med, i) => (
+                          <motion.div 
+                              key={i} 
+                              layout
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ 
+                                  opacity: 1,
+                                  y: 0,
+                                  borderColor: i === activeMedIndex ? '#0066FF' : 'rgba(0, 102, 255, 0)',
+                                  scale: i === activeMedIndex ? 1.02 : 1
+                              }} 
+                              transition={{ 
+                                  delay: i * 0.1,
+                                  type: 'spring',
+                                  stiffness: 260,
+                                  damping: 20
+                              }}
+                              className={`clinical-card ${i === activeMedIndex ? 'border-brand-blue ring-4 ring-brand-blue/10 shadow-2xl' : 'hover:border-slate-300 dark:hover:border-white/20'} space-y-4 relative overflow-hidden group`}
+                          >
+                              <div className={`absolute left-0 top-0 bottom-0 w-2 ${med.humanConfirmed ? 'bg-brand-green' : (med.verification?.color === 'rose' ? 'bg-rose-500' : (med.verification?.color === 'amber' ? 'bg-amber-500' : 'bg-slate-300'))}`} />
+                              
+                              <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <motion.button
+                                      whileHover={{ scale: 1.1, rotate: 5 }}
+                                      whileTap={{ scale: 0.9, rotate: -5 }}
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteMed(i); }}
+                                      className="p-2 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
+                                  >
+                                      <TrashIcon className="size-4" />
+                                  </motion.button>
+                              </div>
 
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="size-10 rounded-2xl bg-brand-blue/10 flex items-center justify-center text-brand-blue border border-brand-blue/10">
-                                    <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest leading-none">Safety Insights</h4>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Clinical AI Recommendations</p>
-                                </div>
-                            </div>
+                              <div className="pl-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                      <ConfidenceBadge confidence={med.confidence} className="mb-1" />
+                                      {med.humanConfirmed && (
+                                          <div className="flex items-center gap-1 text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                                              <VerifiedShield className="size-3" />
+                                              Verified
+                                          </div>
+                                      )}
+                                  </div>
+                                  <AutocompleteInput 
+                                      label="Medication Name" 
+                                      value={med.name} 
+                                      onChange={v => handleMedChange(i, 'name', v)} 
+                                      fetchSuggestions={async (q) => { 
+                                          const { getDrugSuggestions } = await import('../services/openFdaService.ts'); 
+                                          const res = await getDrugSuggestions(q); 
+                                          return res.map(r => r.standardName || r.brandName || r.genericName || ''); 
+                                      }} 
+                                      onFocus={() => setActiveMedIndex(i)} 
+                                      onBlur={() => setActiveMedIndex(null)} 
+                                      className="text-lg font-black uppercase tracking-tight"
+                                      rightElement={
+                                          <div className="flex items-center gap-2">
+                                              <VerificationStatusBadge 
+                                                  isReverifying={reverifyingIndex === i} 
+                                                  result={med.verification} 
+                                                  humanConfirmed={med.humanConfirmed}
+                                                  onClick={() => { 
+                                                      const v = med.verification;
+                                                      if (v && (v.color === 'amber' || v.color === 'rose') && v.candidates?.length > 0) { 
+                                                          triggerHaptic('medium');
+                                                          setResolutionTarget({ index: i, candidates: v.candidates }); 
+                                                      } else {
+                                                          handleSignOff(i);
+                                                      }
+                                                  }} 
+                                              />
+                                          </div>
+                                      } 
+                                  />
+                              </div>
 
-                            <div className="space-y-4">
-                                {hasCritical && suggestions.criticalAlerts?.map((alert, i) => (
-                                    <motion.div 
-                                        key={`crit-${i}`} 
-                                        initial={{ x: -10, opacity: 0 }}
-                                        animate={{ x: 0, opacity: 1 }}
-                                        transition={{ delay: i * 0.1 }}
-                                        className="flex gap-4 p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20"
-                                    >
-                                        <span className="material-symbols-outlined text-rose-500 text-[20px] shrink-0">report</span>
-                                        <p className="text-xs font-bold text-rose-700 dark:text-rose-300 leading-relaxed">{alert}</p>
-                                    </motion.div>
-                                ))}
-                                
-                                {hasGeneral && suggestions.generalRecommendations?.map((rec, i) => (
-                                    <motion.div 
-                                        key={`rec-${i}`} 
-                                        initial={{ x: -10, opacity: 0 }}
-                                        animate={{ x: 0, opacity: 1 }}
-                                        transition={{ delay: (hasCritical ? suggestions.criticalAlerts!.length : 0 + i) * 0.1 }}
-                                        className="flex gap-4 p-4 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-100 dark:border-cyan-500/20"
-                                    >
-                                        <span className="material-symbols-outlined text-cyan-500 text-[20px] shrink-0">info</span>
-                                        <p className="text-xs font-bold text-cyan-700 dark:text-cyan-300 leading-relaxed">{rec}</p>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        </div>
+                              <div className="grid grid-cols-3 gap-4 pl-4">
+                                  <EditableField label="Strength" value={med.dosage} onChange={v => handleMedChange(i, 'dosage', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)} />
+                                  <EditableField label="Freq" value={med.frequency} onChange={v => handleMedChange(i, 'frequency', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
+                                  <EditableField label="Route" value={med.route || ''} onChange={v => handleMedChange(i, 'route', v)} onFocus={() => setActiveMedIndex(i)} onBlur={() => setActiveMedIndex(null)}/>
+                              </div>
+
+                              <ReasoningTrace reasoning={med.reasoning} verification={med.verification} />
+
+                              {!med.humanConfirmed && (
+                                  <div className="pl-4 mt-4">
+                                      <button 
+                                          onClick={() => handleSignOff(i)}
+                                          className="w-full py-3 rounded-2xl border-2 border-brand-blue/20 bg-brand-blue/5 text-xs font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all active:scale-95"
+                                      >
+                                          Confirm Line {i + 1}
+                                      </button>
+                                  </div>
+                              )}
+                          </motion.div>
+                      ))}
+
+                      <motion.button
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleAddMed}
+                          className="w-full py-6 rounded-[2rem] bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs"
+                      >
+                          <span className="material-symbols-outlined">add_circle</span>
+                          Add Medication
+                      </motion.button>
+                  </div>
+              </div>
+
+              <div className="border-t border-slate-200 dark:border-slate-700 opacity-50 my-6" />
+
+              {/* Multilingual Notes & Translation */}
+              <div className="space-y-4">
+                  <EditableField 
+                      label="Original Clinical Notes" 
+                      value={editableData?.notes || ''} 
+                      onChange={v => handleFieldChange('notes', v)} 
+                      multiline 
+                      rightElement={<ConfidenceIndicator confidence={editableData?.notesConfidence} />}
+                  />
+                  
+                  {editableData?.translatedNotes && editableData.translatedNotes !== 'N/A' && (
+                      <motion.div 
+                          initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                          className="p-4 rounded-2xl bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-100 dark:border-cyan-900/30 space-y-2"
+                      >
+                          <div className="flex items-center gap-2 text-cyan-700 dark:text-cyan-300">
+                              <span className="material-symbols-outlined text-[18px]">translate</span>
+                              <h4 className="clinical-label text-cyan-700 dark:text-cyan-300 mb-0">AI Clinical Translation</h4>
+                          </div>
+                          <p className="text-xs font-medium text-cyan-800 dark:text-cyan-200 italic leading-relaxed">
+                              {editableData.translatedNotes}
+                          </p>
+                      </motion.div>
+                  )}
+              </div>
+
+              {/* Patient Education Section */}
+              {editableData?.patientSummary && (
+                  <motion.div 
+                      initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                      className="p-5 rounded-[2rem] bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 space-y-3 shadow-sm"
+                  >
+                      <div className="flex items-center gap-3">
+                          <div className="size-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                              <span className="material-symbols-outlined text-[20px]">school</span>
+                          </div>
+                          <div>
+                              <h4 className="clinical-label text-emerald-900 dark:text-emerald-100 mb-0">Patient Education</h4>
+                              <p className="text-[9px] font-bold text-emerald-600/60 uppercase tracking-tighter">Plain Language Summary</p>
+                          </div>
+                      </div>
+                      <p className="text-sm text-emerald-800 dark:text-emerald-200 leading-relaxed font-medium">
+                          {editableData.patientSummary}
+                      </p>
+                  </motion.div>
+              )}
+
+              <AnimatePresence>
+                  {hasAnySuggestions && showAiSuggestions && (
+                      <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="mt-8 p-6 rounded-[2rem] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 relative overflow-hidden shadow-sm"
+                      >
+                          <button 
+                              onClick={() => { triggerHaptic('light'); setShowAiSuggestions(false); }}
+                              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-slate-400"
+                              aria-label="Dismiss AI Insights"
+                          >
+                              <span className="material-symbols-outlined text-[18px]">close</span>
+                          </button>
+
+                          <div className="flex items-center justify-between gap-2 mb-6">
+                              <div className="flex items-center gap-3">
+                                  <div className="size-10 rounded-2xl bg-brand-blue/10 flex items-center justify-center text-brand-blue border border-brand-blue/10">
+                                      <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
+                                  </div>
+                                  <div>
+                                      <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest leading-none">Safety Insights</h4>
+                                      <p className="clinical-label mt-1">Clinical AI Recommendations</p>
+                                  </div>
+                              </div>
+                              <Badge variant="error" size="xs" className="animate-pulse">Critical</Badge>
+                          </div>
+
+                          <div className="space-y-4">
+                              {hasCritical && suggestions.criticalAlerts?.map((alert, i) => (
+                                  <motion.div 
+                                      key={`crit-${i}`} 
+                                      initial={{ x: -10, opacity: 0 }}
+                                      animate={{ x: 0, opacity: 1 }}
+                                      transition={{ delay: i * 0.1 }}
+                                      className="flex gap-4 p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 shadow-sm"
+                                  >
+                                      <span className="material-symbols-outlined text-rose-600 dark:text-rose-400 text-[20px] shrink-0">report</span>
+                                      <p className="text-xs font-black text-rose-900 dark:text-rose-100 leading-relaxed">{alert}</p>
+                                  </motion.div>
+                              ))}
+                              
+                              {hasGeneral && suggestions.generalRecommendations?.map((rec, i) => (
+                                  <motion.div 
+                                      key={`rec-${i}`} 
+                                      initial={{ x: -10, opacity: 0 }}
+                                      animate={{ x: 0, opacity: 1 }}
+                                      transition={{ delay: (hasCritical ? suggestions.criticalAlerts!.length : 0 + i) * 0.1 }}
+                                      className="flex gap-4 p-4 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/30 shadow-sm"
+                                  >
+                                      <span className="material-symbols-outlined text-cyan-600 dark:text-cyan-400 text-[20px] shrink-0">info</span>
+                                      <p className="text-xs font-black text-cyan-900 dark:text-cyan-100 leading-relaxed">{rec}</p>
+                                  </motion.div>
+                              ))}
+                          </div>
+                          <div className="h-32" /> {/* Bottom padding for keyboard */}
+                      </motion.div>
+                  )}
+              </AnimatePresence>
+          </div>
       );
   };
 
@@ -668,26 +864,65 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
 
   if (!editableData) return <Spinner />;
 
+  const criticalAlerts = editableData.aiSuggestions?.criticalAlerts || [];
+
   return (
-    <>
-      <AnimatePresence>{showAuditModal && <AuditTrailModal trail={editableData.auditTrail || []} onClose={() => setShowAuditModal(false)} />}</AnimatePresence>
-      <AnimatePresence>{resolutionTarget && editableData && (<ResolutionModal candidate={resolutionTarget.candidates} currentName={editableData.medication[resolutionTarget.index].name} onSelect={(name) => handleResolutionSelect(resolutionTarget.index, name)} onClose={() => setResolutionTarget(null)}/>)}</AnimatePresence>
-      <div className="lg:hidden flex flex-col overflow-visible">
-          <div className="flex p-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 h-14 shrink-0">
-              <button onClick={() => setMobileTab('image')} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${mobileTab === 'image' ? 'bg-slate-200 dark:bg-white/10 text-brand-blue' : 'text-slate-500'}`}>Original Ink</button>
-              <button onClick={() => setMobileTab('details')} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${mobileTab === 'details' ? 'bg-slate-200 dark:bg-white/10 text-brand-blue' : 'text-slate-500'}`}>Transcription Details</button>
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <PatientContextHeader 
+        name={editableData.patientName}
+        id={editableData.id}
+        dob={editableData.patientAge} // Assuming age might be DOB or just age string
+        timestamp={editableData.timestamp}
+      />
+      
+      <AnimatePresence>
+        {criticalAlerts.length > 0 && (
+          <ClinicalAlertBanner 
+            severity="CRITICAL"
+            title="Drug Interaction Warning"
+            message={criticalAlerts[0]}
+            onDismiss={() => {}} // In production, this might update state
+          />
+        )}
+      </AnimatePresence>
+
+      <div className="flex-1 overflow-hidden">
+        <AnimatePresence>{showAuditModal && <AuditTrailModal trail={editableData.auditTrail || []} onClose={() => setShowAuditModal(false)} />}</AnimatePresence>
+        <AnimatePresence>{resolutionTarget && editableData && (<ResolutionModal candidate={resolutionTarget.candidates} currentName={editableData.medication[resolutionTarget.index].name} onSelect={(name) => handleResolutionSelect(resolutionTarget.index, name)} onClose={() => setResolutionTarget(null)}/>)}</AnimatePresence>
+        
+        <div className="lg:hidden flex flex-col h-full">
+            <div className="flex p-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 h-14 shrink-0">
+                <button onClick={() => setMobileTab('image')} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${mobileTab === 'image' ? 'bg-slate-200 dark:bg-white/10 text-brand-blue' : 'text-slate-500'}`}>Original Ink</button>
+                <button onClick={() => setMobileTab('details')} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${mobileTab === 'details' ? 'bg-slate-200 dark:bg-white/10 text-brand-blue' : 'text-slate-500'}`}>Transcription Details</button>
+            </div>
+            <div className="flex-1 overflow-hidden relative flex flex-col">
+                {mobileTab === 'image' ? (
+                  <div className="flex-1 p-4 flex items-center justify-center overflow-auto">
+                    {renderImageViewer()}
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex-1 overflow-y-auto no-scrollbar">
+                      {renderForm()}
+                    </div>
+                    {renderActions()}
+                  </div>
+                )}
+            </div>
+        </div>
+
+        <div className="hidden lg:flex h-full gap-6 p-6 overflow-hidden">
+          <div className="w-1/2 glass-panel rounded-3xl p-4 flex items-center justify-center relative overflow-hidden">
+            {renderImageViewer()}
           </div>
-          <div className="flex-grow overflow-visible relative">
-              {mobileTab === 'image' ? <div className="p-4 flex items-center justify-center">{renderImageViewer()}</div> : <div className="relative flex flex-col"><div className="flex-grow no-scrollbar pb-24">{renderForm()}</div>{renderActions()}</div>}
+          <div className="w-1/2 glass-panel rounded-3xl relative overflow-hidden flex flex-col border border-white/60 dark:border-white/10 shadow-2xl">
+              <div className="flex-1 overflow-y-auto no-scrollbar">
+                {renderForm()}
+              </div>
+              {renderActions()}
           </div>
-      </div>
-      <div className="hidden lg:flex gap-6 overflow-visible">
-        <div className="w-1/2 glass-panel rounded-2xl p-4 flex items-center justify-center relative">{renderImageViewer()}</div>
-        <div className="w-1/2 glass-panel rounded-2xl relative overflow-hidden flex flex-col border border-white/60 dark:border-white/10 shadow-2xl">
-            <div className="flex-grow no-scrollbar">{renderForm()}</div>
-            {renderActions()}
         </div>
       </div>
-    </>
+    </div>
   );
 };

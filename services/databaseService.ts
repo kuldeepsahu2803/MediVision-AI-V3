@@ -31,10 +31,24 @@ export const savePrescription = async (data: PrescriptionData): Promise<void> =>
   // 2. Prepare Data for Postgres
   const { imageUrls, ...cleanData } = data;
   
+  // Safely parse date to avoid "Invalid time value" errors
+  let formattedDate: string;
+  try {
+    const parsedDate = data.date ? new Date(data.date) : new Date();
+    if (isNaN(parsedDate.getTime())) {
+      console.warn(`Invalid date encountered: "${data.date}". Falling back to current time.`);
+      formattedDate = new Date().toISOString();
+    } else {
+      formattedDate = parsedDate.toISOString();
+    }
+  } catch (e) {
+    formattedDate = new Date().toISOString();
+  }
+  
   const payload: any = {
     user_id: user.id,
     patient_name: data.patientName || 'Unknown',
-    date: data.date ? new Date(data.date).toISOString() : new Date().toISOString(),
+    date: formattedDate,
     status: data.status,
     full_data: cleanData,
     image_path: imagePath,
