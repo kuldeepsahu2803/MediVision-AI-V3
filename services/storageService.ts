@@ -1,9 +1,10 @@
 import { supabase } from '../lib/supabaseClient.ts';
-import { PrescriptionData } from '../types.ts';
+import { PrescriptionData, BloodTestReport } from '../types.ts';
 import { getPDFFile } from '../lib/pdfUtils.ts';
+import { getLabPDFBlob } from '../lib/labPdfUtils.ts';
 
 // Helper to check if string is a valid UUID
-const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
 const dataURLToBlob = async (url: string): Promise<Blob> => {
   if (url.startsWith('blob:')) {
@@ -89,6 +90,71 @@ export const uploadPrescriptionAssets = async (userId: string, data: Prescriptio
     } catch (e: any) {
         console.error("Clinical document storage failed:", e);
         // We allow the process to continue even if PDF storage fails, as metadata is more critical
+    }
+
+    return { imagePath, pdfPath };
+};
+
+export const uploadLabReportAssets = async (userId: string, data: BloodTestReport): Promise<UploadResult> => {
+    let imagePath = null;
+    let pdfPath = null;
+    
+    const safeId = isUUID(data.id) ? data.id : `temp_${Date.now()}`;
+
+    // 1. Upload Image
+    if (data.imageUrls && data.imageUrls.length > 0) {
+        const url = data.imageUrls[0];
+        if (url.startsWith('data:') || url.startsWith('blob:')) {
+            try {
+                const blob = await dataURLToBlob(url);
+                const fileName = `${userId}/${safeId}_lab_image.png`;
+                
+                const { error: uploadError } = await supabase.storage
+                    .from('lab_reports')
+                    .upload(fileName, blob, {
+                        contentType: 'image/png',
+                        upsert: true
+                    });
+
+                if (uploadError) {
+                    console.error("Lab image upload error:", uploadError);
+                } else {
+                    const { data: publicUrlData } = supabase.storage
+                        .from('lab_reports')
+                        .getPublicUrl(fileName);
+                    imagePath = publicUrlData.publicUrl;
+                }
+            } catch (convError: any) {
+                console.warn("Lab image conversion failed", convError);
+                imagePath = url;
+            }
+        } else {
+            imagePath = url;
+        }
+    }
+
+    // 2. Generate and Upload PDF
+    try {
+        const pdfBlob = getLabPDFBlob(data);
+        const pdfName = `${userId}/${safeId}_lab_report.pdf`;
+        
+        const { error: pdfError } = await supabase.storage
+            .from('lab_reports')
+            .upload(pdfName, pdfBlob, {
+                contentType: 'application/pdf',
+                upsert: true
+            });
+            
+        if (pdfError) {
+            console.error("Lab PDF upload error:", pdfError);
+        } else {
+            const { data: pdfUrlData } = supabase.storage
+                .from('lab_reports')
+                .getPublicUrl(pdfName);
+            pdfPath = pdfUrlData.publicUrl;
+        }
+    } catch (e: any) {
+        console.error("Lab PDF generation/upload failed:", e);
     }
 
     return { imagePath, pdfPath };

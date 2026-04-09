@@ -1,0 +1,163 @@
+{
+  "rxLabConflicts": [
+    {
+      "id": "kidney_metformin",
+      "name": "Kidney Risk (Metformin)",
+      "labTriggers": [
+        { "test": "Creatinine", "status": "High" },
+        { "test": "eGFR", "status": "Low" }
+      ],
+      "medConflicts": ["Metformin"],
+      "severity": "HIGH",
+      "message": "Metformin use with elevated creatinine increases risk of lactic acidosis.",
+      "action": "Consult nephrologist; consider dose reduction or alternative."
+    },
+    {
+      "id": "kidney_nsaids",
+      "name": "Kidney Risk (NSAIDs)",
+      "labTriggers": [
+        { "test": "Creatinine", "status": "High" }
+      ],
+      "medConflicts": ["Ibuprofen", "Naproxen", "Diclofenac", "Aspirin"],
+      "severity": "HIGH",
+      "message": "NSAIDs can further impair kidney function in patients with high creatinine.",
+      "action": "Avoid NSAIDs; use Paracetamol for pain if appropriate."
+    },
+    {
+      "id": "liver_statins",
+      "name": "Liver Risk (Statins)",
+      "labTriggers": [
+        { "test": "ALT", "status": "High" },
+        { "test": "AST", "status": "High" }
+      ],
+      "medConflicts": ["Atorvastatin", "Rosuvastatin", "Simvastatin"],
+      "severity": "MEDIUM",
+      "message": "Statins can elevate liver enzymes. Monitoring required.",
+      "action": "Repeat LFTs in 2-4 weeks; monitor for jaundice or upper abdominal pain."
+    },
+    {
+      "id": "liver_paracetamol",
+      "name": "Liver Risk (Paracetamol)",
+      "labTriggers": [
+        { "test": "ALT", "status": "High" },
+        { "test": "Bilirubin", "status": "High" }
+      ],
+      "medConflicts": ["Paracetamol", "Acetaminophen"],
+      "severity": "CRITICAL",
+      "message": "High dose Paracetamol is contraindicated in acute liver injury.",
+      "action": "Limit Paracetamol to <2g/day or avoid entirely."
+    },
+    {
+      "id": "heart_potassium_acei",
+      "name": "Hyperkalemia Risk (ACEi)",
+      "labTriggers": [
+        { "test": "Potassium", "status": "High" }
+      ],
+      "medConflicts": ["Lisinopril", "Enalapril", "Ramipril", "Losartan", "Telmisartan"],
+      "severity": "HIGH",
+      "message": "ACE inhibitors and ARBs can further increase potassium levels.",
+      "action": "Monitor potassium closely; consider low-potassium diet."
+    },
+    {
+      "id": "heart_potassium_spiro",
+      "name": "Hyperkalemia Risk (Spironolactone)",
+      "labTriggers": [
+        { "test": "Potassium", "status": "High" }
+      ],
+      "medConflicts": ["Spironolactone", "Eplerenone"],
+      "severity": "CRITICAL",
+      "message": "Potassium-sparing diuretics pose severe hyperkalemia risk with high baseline K+.",
+      "action": "Urgent review of diuretic therapy."
+    },
+    {
+      "id": "diabetes_insulin_hba1c",
+      "name": "Hypoglycemia Risk",
+      "labTriggers": [
+        { "test": "HbA1c", "status": "Low" },
+        { "test": "Glucose", "status": "Low" }
+      ],
+      "medConflicts": ["Insulin", "Glimepiride", "Gliclazide"],
+      "severity": "HIGH",
+      "message": "Intensive insulin therapy with low HbA1c increases severe hypoglycemia risk.",
+      "action": "Review insulin dosage and monitoring frequency."
+    },
+    {
+      "id": "thyroid_levo",
+      "name": "Thyroid Optimization",
+      "labTriggers": [
+        { "test": "TSH", "status": "High" }
+      ],
+      "medConflicts": ["Levothyroxine"],
+      "severity": "MEDIUM",
+      "message": "Elevated TSH suggests Levothyroxine dose may be sub-therapeutic.",
+      "action": "Consult endocrinologist for dose titration."
+    }
+  ],
+  "ayurvedicConflicts": [
+    {
+      "id": "ashwagandha_thyroid",
+      "name": "Ashwagandha + Thyroid",
+      "herbal": "Ashwagandha",
+      "medConflicts": ["Levothyroxine"],
+      "severity": "MEDIUM",
+      "message": "Ashwagandha may increase thyroid hormone levels, potentially causing hyperthyroidism.",
+      "action": "Monitor TSH/T4 closely if combining."
+    },
+    {
+      "id": "ashwagandha_sedatives",
+      "name": "Ashwagandha + Sedatives",
+      "herbal": "Ashwagandha",
+      "medConflicts": ["Zolpidem", "Alprazolam", "Diazepam", "Lorazepam"],
+      "severity": "LOW",
+      "message": "Ashwagandha has sedative properties and may enhance effects of prescription sedatives.",
+      "action": "Monitor for excessive sleepiness."
+    },
+    {
+      "id": "triphala_thinners",
+      "name": "Triphala + Blood Thinners",
+      "herbal": "Triphala",
+      "medConflicts": ["Warfarin", "Clopidogrel", "Aspirin", "Rivaroxaban"],
+      "severity": "MEDIUM",
+      "message": "Triphala may have mild anti-platelet effects, increasing bleeding risk with anticoagulants.",
+      "action": "Monitor for unusual bruising or bleeding."
+    },
+    {
+      "id": "turmeric_thinners",
+      "name": "Turmeric + Blood Thinners",
+      "herbal": "Turmeric",
+      "medConflicts": ["Warfarin", "Clopidogrel", "Aspirin", "Apixaban"],
+      "severity": "MEDIUM",
+      "message": "Curcumin in turmeric has anticoagulant properties.",
+      "action": "Avoid high-dose curcumin supplements while on blood thinners."
+    }
+  ],
+  "criticalThresholds": [
+    { "test": "Potassium", "min": 3.0, "max": 6.0, "emergency": 6.5 },
+    { "test": "Glucose", "min": 70, "max": 250, "emergency": 400 },
+    { "test": "Hemoglobin", "min": 8.0, "max": 18.0, "emergency": 7.0 },
+    { "test": "Platelets", "min": 100000, "max": 450000, "emergency": 20000 }
+  ],
+  "trendRules": [
+    {
+      "test": "WBC",
+      "direction": "UP",
+      "threshold": 0.3,
+      "message": "Significant rise in WBC detected. Possible acute infection.",
+      "severity": "HIGH"
+    },
+    {
+      "test": "Creatinine",
+      "direction": "UP",
+      "threshold": 0.2,
+      "message": "Rising creatinine trend suggests declining renal function.",
+      "severity": "HIGH"
+    },
+    {
+      "test": "Hemoglobin",
+      "direction": "DOWN",
+      "threshold": 0.15,
+      "message": "Declining hemoglobin levels. Monitor for anemia or occult bleeding.",
+      "severity": "MEDIUM"
+    }
+  ]
+}

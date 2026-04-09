@@ -6,6 +6,7 @@ import { ReviewView } from './components/ReviewView.tsx';
 import { ReportsView } from './components/ReportsView.tsx';
 import { TreatmentsView } from './components/TreatmentsView.tsx';
 import { SettingsView } from './components/SettingsView.tsx';
+import { ClinicalDashboard } from './components/ClinicalDashboard.tsx';
 import { LoginModal } from './components/LoginModal.tsx';
 import { Toast } from './components/Toast.tsx';
 import { Spinner } from './components/Spinner.tsx';
@@ -19,6 +20,7 @@ import { AppLayout } from './components/layout/AppLayout.tsx';
 import { useAuthSession } from './hooks/useAuthSession.ts';
 import { useMedicalHistory } from './hooks/useMedicalHistory.ts';
 import { useAnalysisEngine } from './hooks/useAnalysisEngine.ts';
+import { useClinicalAlerts } from './hooks/useClinicalAlerts.ts';
 import { useHaptic } from './hooks/useHaptic.ts';
 import { useAppWorkflow } from './hooks/useAppWorkflow.ts';
 import { useNavigationState } from './hooks/useNavigationState.ts';
@@ -50,6 +52,14 @@ const App: React.FC = () => {
     deleteLabFromHistory, 
     isLoadingHistory 
   } = medicalHistory;
+  
+  const { 
+    insight, 
+    isLoading: isInsightLoading, 
+    triggerAnalysis, 
+    dismissAlert 
+  } = useClinicalAlerts(history, labHistory);
+
   const { imageFiles, imageUrls, prescriptionData, setPrescriptionData, isLoading, error, addImages, removeImage, clear, analyze } = analysisEngine;
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
@@ -75,7 +85,8 @@ const App: React.FC = () => {
       triggerHaptic,
       showToast,
       setShowLoginModal,
-      navigateToTab
+      navigateToTab,
+      triggerClinicalAnalysis: triggerAnalysis
   });
 
   const handleLogout = () => {
@@ -116,8 +127,20 @@ const App: React.FC = () => {
           <LabsView 
             history={labHistory} 
             currentMeds={currentMeds} 
-            onSave={saveLabToHistory} 
+            onSave={async (report) => {
+              await saveLabToHistory(report);
+              triggerAnalysis();
+            }} 
             onDelete={deleteLabFromHistory} 
+          />
+        );
+      case AppTab.DASHBOARD:
+        return (
+          <ClinicalDashboard 
+            insight={insight} 
+            onDismissAlert={dismissAlert} 
+            onTriggerAnalysis={triggerAnalysis}
+            isLoading={isInsightLoading}
           />
         );
       case AppTab.REPORTS:

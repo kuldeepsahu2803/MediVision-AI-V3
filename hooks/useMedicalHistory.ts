@@ -21,7 +21,10 @@ export const useMedicalHistory = () => {
       try {
         // 1. Load local/cached data immediately for responsiveness
         const initialData = await dbService.getAllPrescriptions();
-        const initialLabs = await localDB.getLabsFromLocalDB();
+        const initialLabs = isLoggedIn 
+          ? await dbService.getAllLabReports() 
+          : await localDB.getLabsFromLocalDB();
+          
         if (mounted) {
           setHistory(initialData || []);
           setLabHistory(initialLabs || []);
@@ -33,7 +36,11 @@ export const useMedicalHistory = () => {
             syncLocalToCloud().then(async () => {
                 hasSyncedRef.current = true;
                 const fresh = await dbService.getAllPrescriptions();
-                if (mounted) setHistory(fresh || []);
+                const freshLabs = await dbService.getAllLabReports();
+                if (mounted) {
+                  setHistory(fresh || []);
+                  setLabHistory(freshLabs || []);
+                }
             }).catch(syncErr => console.warn("Background sync failed", syncErr));
         }
       } catch (e) {
@@ -68,9 +75,15 @@ export const useMedicalHistory = () => {
   const saveLabToHistory = async (dataToSave: BloodTestReport) => {
     setLabHistory(prev => [dataToSave, ...prev]);
     try {
-      await localDB.saveLabToLocalDB(dataToSave);
-      const fresh = await localDB.getLabsFromLocalDB();
-      setLabHistory(fresh || []);
+      if (isLoggedIn) {
+        await dbService.saveLabReport(dataToSave);
+        const fresh = await dbService.getAllLabReports();
+        setLabHistory(fresh || []);
+      } else {
+        await localDB.saveLabToLocalDB(dataToSave);
+        const fresh = await localDB.getLabsFromLocalDB();
+        setLabHistory(fresh || []);
+      }
     } catch (e) { console.error("Lab Save Failure:", e); }
   };
 
@@ -82,7 +95,13 @@ export const useMedicalHistory = () => {
 
   const deleteLabFromHistory = async (idToDelete: string) => {
     setLabHistory(prev => prev.filter(h => h.id !== idToDelete));
-    try { await localDB.deleteLabFromLocalDB(idToDelete); }
+    try { 
+      if (isLoggedIn) {
+        await dbService.deleteLabReport(idToDelete);
+      } else {
+        await localDB.deleteLabFromLocalDB(idToDelete);
+      }
+    }
     catch (e) { console.error("Lab Delete Failure:", e); }
   };
 

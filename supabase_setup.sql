@@ -57,3 +57,43 @@ CREATE TRIGGER tr_prescriptions_updated_at
     BEFORE UPDATE ON public.prescriptions
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
+
+-- 6. Lab Reports Table
+CREATE TABLE IF NOT EXISTS public.lab_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    patient_name TEXT NOT NULL,
+    date TIMESTAMPTZ NOT NULL DEFAULT now(),
+    status TEXT NOT NULL,
+    full_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    image_path TEXT,
+    pdf_path TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lab_reports_user_id ON public.lab_reports(user_id);
+CREATE INDEX IF NOT EXISTS idx_lab_reports_created_at ON public.lab_reports(created_at DESC);
+
+ALTER TABLE public.lab_reports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own lab reports" 
+    ON public.lab_reports FOR SELECT 
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own lab reports" 
+    ON public.lab_reports FOR INSERT 
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own lab reports" 
+    ON public.lab_reports FOR UPDATE 
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own lab reports" 
+    ON public.lab_reports FOR DELETE 
+    USING (auth.uid() = user_id);
+
+CREATE TRIGGER tr_lab_reports_updated_at
+    BEFORE UPDATE ON public.lab_reports
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();

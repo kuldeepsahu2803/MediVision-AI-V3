@@ -16,6 +16,7 @@ interface UseAppWorkflowProps {
     showToast: (message: string, type: ToastType) => void;
     setShowLoginModal: (show: boolean) => void;
     navigateToTab: (tab: AppTab, mode: TransitionMode) => void;
+    triggerClinicalAnalysis?: () => void;
 }
 
 export const useAppWorkflow = ({
@@ -26,7 +27,8 @@ export const useAppWorkflow = ({
     triggerHaptic,
     showToast,
     setShowLoginModal,
-    navigateToTab
+    navigateToTab,
+    triggerClinicalAnalysis
 }: UseAppWorkflowProps) => {
     
     const { analyze, prescriptionData, setPrescriptionData } = analysisEngine;
@@ -85,6 +87,10 @@ export const useAppWorkflow = ({
             setPrescriptionData(dataToSave);
             await saveToHistory(dataToSave);
             
+            if (triggerClinicalAnalysis) {
+                triggerClinicalAnalysis();
+            }
+            
             triggerHaptic('success');
             showToast('Record archived successfully.', 'success');
             navigateToTab(AppTab.TREATMENTS, TransitionMode.DRILL);
@@ -128,6 +134,10 @@ export const useAppWorkflow = ({
     
             setPrescriptionData(dataToSave);
             await saveToHistory(dataToSave);
+            
+            if (triggerClinicalAnalysis) {
+                triggerClinicalAnalysis();
+            }
             
             triggerHaptic('success');
             showToast('Prescription clinically verified and locked.', 'success');

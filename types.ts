@@ -14,8 +14,35 @@ export interface FdaVerification {
 export type VerificationColor = 'cyan' | 'amber' | 'rose' | 'gray' | 'emerald';
 export type VerificationStatus = 'ai_transcription' | 'tentative_match' | 'database_match' | 'low_confidence' | 'invalid_strength' | 'human_verified';
 
-export type ClinicalSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+export type ClinicalSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
 export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN';
+
+export interface ClinicalAlert {
+  id: string;
+  type: 'DDI' | 'TREND' | 'CRITICAL' | 'AYURVEDIC';
+  severity: ClinicalSeverity;
+  message: string;
+  action?: string;
+  triggeredAt: string;
+  resolved: boolean;
+  relatedIds?: string[]; // IDs of prescriptions or lab reports that triggered this
+  metadata?: any;
+}
+
+export interface ClinicalInsight {
+  id: string;
+  userId: string;
+  alerts: ClinicalAlert[];
+  summary: string;
+  riskScores: {
+    kidney: number; // 0-100
+    liver: number;
+    heart: number;
+    diabetes: number;
+    thyroid: number;
+  };
+  generatedAt: string;
+}
 
 export interface RxNormCandidate {
   rxcui: string;
