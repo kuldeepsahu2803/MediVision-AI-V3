@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.ts",
-    "lint": "tsc --noEmit",
+    "lint": "eslint . && tsc --noEmit",
     "test:pdf": "tsx scripts/validate-pdf.ts",
     "test:pdf:visual": "tsx scripts/visual-regression.ts"
   },
@@ -50,9 +50,15 @@
     "tsx": "^4.21.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/jszip": "^3.1.6",
     "@types/node": "^22.14.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
+    "@typescript-eslint/parser": "^8.58.1",
     "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-import": "^2.32.0",
+    "globals": "^17.4.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

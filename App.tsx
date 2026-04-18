@@ -1,15 +1,13 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { AnalyzeView } from './components/AnalyzeView.tsx';
-import { LabsView } from './components/LabsView.tsx';
-import { ReviewView } from './components/ReviewView.tsx';
-import { ReportsView } from './components/ReportsView.tsx';
-import { TreatmentsView } from './components/TreatmentsView.tsx';
-import { SettingsView } from './components/SettingsView.tsx';
-import { ClinicalDashboard } from './components/ClinicalDashboard.tsx';
-import { LoginModal } from './components/LoginModal.tsx';
-import { Toast } from './components/Toast.tsx';
-import { Spinner } from './components/Spinner.tsx';
+import React, { useEffect } from 'react';
+import { AnalyzeView, ReviewView, TreatmentsView, PrescriptionProvider, usePrescription } from '@/features/prescriptions';
+import { LabsView, LabProvider, useLab } from '@/features/blood-tests';
+import { ReportsView } from '@/components/ReportsView.tsx';
+import { SettingsView } from '@/components/SettingsView.tsx';
+import { ClinicalDashboard } from '@/components/ClinicalDashboard.tsx';
+import { LoginModal } from '@/components/LoginModal.tsx';
+import { Toast } from '@/components/Toast.tsx';
+import { Spinner } from '@/components/Spinner.tsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PageTransition } from './components/ui/PageTransition.tsx';
 import LandingView from './components/LandingView.tsx';
@@ -18,73 +16,62 @@ import { RoleSelectionView } from './components/RoleSelectionView.tsx';
 
 import { AppLayout } from './components/layout/AppLayout.tsx';
 import { useAuthSession } from './hooks/useAuthSession.ts';
-import { useMedicalHistory } from './hooks/useMedicalHistory.ts';
-import { useAnalysisEngine } from './hooks/useAnalysisEngine.ts';
-import { useClinicalAlerts } from './hooks/useClinicalAlerts.ts';
+import { ClinicalIntelligenceProvider, useClinicalIntelligence } from '@/features/clinical-intelligence';
 import { useHaptic } from './hooks/useHaptic.ts';
 import { useAppWorkflow } from './hooks/useAppWorkflow.ts';
 import { useNavigationState } from './hooks/useNavigationState.ts';
 import { AppView, AppTab, TransitionMode } from './constants/navigation.ts';
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'critical';
-export type ToastItem = { id: string; message: string; type: ToastType };
 type UserRole = 'guest' | 'professional' | null;
 
-const App: React.FC = () => {
-  const { appView, activeTab, transitionMode, selectedModule, setSelectedModule, navigateToTab, navigateToView } = useNavigationState();
-  const [userRole, setUserRole] = useState<UserRole>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [showTreatments, setShowTreatments] = useState(true);
+import { UIProvider, useUI } from './context/UIContext.tsx';
 
-  const { user, isLoggedIn, logout, loading: authLoading, error: authError, cloudStatus } = useAuthSession();
-  const medicalHistory = useMedicalHistory();
-  const analysisEngine = useAnalysisEngine(isLoggedIn);
-  const { triggerHaptic } = useHaptic();
+const AppContent: React.FC = () => {
+  const { 
+    userRole, setUserRole, isMenuOpen, setIsMenuOpen, showLoginModal, setShowLoginModal, 
+    toasts, showToast, removeToast, showTreatments, setShowTreatments 
+  } = useUI();
+
+  const { appView, activeTab, transitionMode, selectedModule, setSelectedModule, navigateToTab, navigateToView } = useNavigationState();
+  const { user, isLoggedIn, logout, loading: authLoading, cloudStatus } = useAuthSession();
   
   const { 
     history, 
-    labHistory, 
     saveToHistory, 
-    saveLabToHistory, 
     deleteFromHistory, 
+    prescriptionData,
+    setPrescriptionData,
+    imageFiles,
+    imageUrls,
+    isLoading,
+    error,
+    addImages,
+    removeImage,
+    clear,
+    analyze
+  } = usePrescription();
+
+  const { 
+    labHistory, 
+    saveLabToHistory, 
     deleteLabFromHistory, 
-    isLoadingHistory 
-  } = medicalHistory;
+  } = useLab();
+
+  const { triggerHaptic } = useHaptic();
   
   const { 
     insight, 
     isLoading: isInsightLoading, 
     triggerAnalysis, 
     dismissAlert 
-  } = useClinicalAlerts(history, labHistory);
+  } = useClinicalIntelligence();
 
-  const { imageFiles, imageUrls, prescriptionData, setPrescriptionData, isLoading, error, addImages, removeImage, clear, analyze } = analysisEngine;
-
-  const showToast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { id, message, type }]);
-  }, []);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  }, []);
-
-  useEffect(() => {
-    if (authError) {
-      showToast(authError, 'error');
-    }
-  }, [authError, showToast]);
-
-  const { handleAnalyzeClick, handleSaveReview, handleVerify, handleDeleteReport } = useAppWorkflow({
-      userRole,
+  const { handleSaveReview, handleVerify } = useAppWorkflow({
       user,
-      analysisEngine,
-      medicalHistory,
+      analysisEngine: { imageFiles, imageUrls, prescriptionData, setPrescriptionData, isLoading, error, addImages, removeImage, clear, analyze },
+      prescriptionHistory: { history, saveToHistory, deleteFromHistory },
+      labHistory: { labHistory, saveLabToHistory, deleteLabFromHistory },
       triggerHaptic,
-      showToast,
-      setShowLoginModal,
       navigateToTab,
       triggerClinicalAnalysis: triggerAnalysis
   });
@@ -107,33 +94,17 @@ const App: React.FC = () => {
         if (isLoggedIn) {
             navigateToView(AppView.SERVICES);
         } else {
-            // FAIL-OPEN ARCHITECTURE: Always show login. 
-            // The modal handles environmental hints contextually.
             setShowLoginModal(true);
         }
     }
   };
   
-  const displayHistory = userRole === 'guest' ? (prescriptionData ? [prescriptionData] : []) : history;
-
-  const currentMeds = history.flatMap(p => p.medication.map(m => m.name));
-
   const renderContent = () => {
     switch(activeTab) {
       case AppTab.REVIEW:
-        return <ReviewView prescription={prescriptionData} imageUrls={imageUrls.length > 0 ? imageUrls : null} onSave={handleSaveReview} onVerify={handleVerify} />;
+        return <ReviewView onSave={handleSaveReview} onVerify={handleVerify} />;
       case AppTab.LABS:
-        return (
-          <LabsView 
-            history={labHistory} 
-            currentMeds={currentMeds} 
-            onSave={async (report) => {
-              await saveLabToHistory(report);
-              triggerAnalysis();
-            }} 
-            onDelete={deleteLabFromHistory} 
-          />
-        );
+        return <LabsView />;
       case AppTab.DASHBOARD:
         return (
           <ClinicalDashboard 
@@ -146,37 +117,19 @@ const App: React.FC = () => {
       case AppTab.REPORTS:
         return (
           <ReportsView 
-            history={displayHistory} 
-            labHistory={labHistory}
-            isLoading={isLoadingHistory} 
-            onSelectPrescription={(p) => { setPrescriptionData(p); navigateToTab(AppTab.REVIEW, TransitionMode.DRILL); }} 
-            onDeleteReport={handleDeleteReport} 
-            onDeleteLab={deleteLabFromHistory}
             onNavigateToAnalyze={() => navigateToTab(selectedModule === 'rx' ? AppTab.ANALYZE : AppTab.LABS, TransitionMode.TAB)}
           />
         );
       case AppTab.TREATMENTS:
-        return <TreatmentsView prescription={prescriptionData} />;
+        return <TreatmentsView />;
       case AppTab.SETTINGS:
         return <SettingsView onBack={() => navigateToTab(AppTab.ANALYZE, TransitionMode.TAB)} />;
       case AppTab.ANALYZE:
       default:
         return (
           <AnalyzeView 
-            imageFiles={imageFiles}
-            imageUrls={imageUrls}
-            prescriptionData={prescriptionData}
-            isLoading={isLoading}
-            error={error}
-            history={displayHistory}
-            onAddImages={addImages}
-            onRemoveImage={removeImage}
-            onClearQueue={clear}
-            onAnalyze={handleAnalyzeClick}
             onVerify={() => navigateToTab(AppTab.REVIEW, TransitionMode.DRILL)}
-            onSelectHistory={(item) => { setPrescriptionData(item); navigateToTab(AppTab.REVIEW, TransitionMode.DRILL); }}
             onViewAll={() => navigateToTab(AppTab.REPORTS, TransitionMode.TAB)}
-            triggerHaptic={triggerHaptic}
           />
         );
     }
@@ -276,9 +229,7 @@ const App: React.FC = () => {
                           setActiveTab={(t) => navigateToTab(t, TransitionMode.TAB)} 
                           isLoggedIn={isLoggedIn} 
                           isGuest={userRole === 'guest'}
-                          hasData={!!prescriptionData}
                           user={user} 
-                          history={displayHistory} 
                           showTreatments={showTreatments} 
                           setShowTreatments={setShowTreatments} 
                           isMenuOpen={isMenuOpen} 
@@ -306,6 +257,34 @@ const App: React.FC = () => {
       </AnimatePresence>
     </div>
   );
+};
+
+const App: React.FC = () => {
+  const { error: authError } = useAuthSession();
+
+  return (
+    <UIProvider>
+      <PrescriptionProvider>
+        <LabProvider>
+          <ClinicalIntelligenceProvider>
+            <AppContentWrapper authError={authError} />
+          </ClinicalIntelligenceProvider>
+        </LabProvider>
+      </PrescriptionProvider>
+    </UIProvider>
+  );
+};
+
+const AppContentWrapper: React.FC<{ authError: string | null }> = ({ authError }) => {
+  const { showToast } = useUI();
+
+  useEffect(() => {
+    if (authError) {
+      showToast(authError, 'error');
+    }
+  }, [authError, showToast]);
+
+  return <AppContent />;
 };
 
 export default App;

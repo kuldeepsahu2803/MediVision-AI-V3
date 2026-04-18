@@ -1,38 +1,43 @@
 
-import { PrescriptionData, AuditEntry } from '../types.ts';
+import { PrescriptionData } from '@/features/prescriptions';
+import { AuditEntry } from '@/shared/types/audit.types';
 import { getTreatmentSuggestions } from '../services/geminiService.ts';
 import { generateAuditTrail } from '../lib/auditUtils.ts';
 import { AppTab, TransitionMode } from '../constants/navigation.ts';
-import { ToastType } from '../App.tsx';
-
-type UserRole = 'guest' | 'professional' | null;
+import { useUI } from '../context/UIContext.tsx';
 
 interface UseAppWorkflowProps {
-    userRole: UserRole;
     user: any;
     analysisEngine: any;
-    medicalHistory: any;
+    prescriptionHistory: {
+        history: any[];
+        saveToHistory: (data: any) => Promise<void>;
+        deleteFromHistory: (id: string) => Promise<void>;
+    };
+    labHistory: {
+        labHistory: any[];
+        saveLabToHistory: (data: any) => Promise<void>;
+        deleteLabFromHistory: (id: string) => Promise<void>;
+    };
     triggerHaptic: (type: string) => void;
-    showToast: (message: string, type: ToastType) => void;
-    setShowLoginModal: (show: boolean) => void;
     navigateToTab: (tab: AppTab, mode: TransitionMode) => void;
     triggerClinicalAnalysis?: () => void;
 }
 
 export const useAppWorkflow = ({
-    userRole,
     user,
     analysisEngine,
-    medicalHistory,
+    prescriptionHistory,
+    labHistory,
     triggerHaptic,
-    showToast,
-    setShowLoginModal,
     navigateToTab,
     triggerClinicalAnalysis
 }: UseAppWorkflowProps) => {
+    const { userRole, showToast, setShowLoginModal } = useUI();
     
     const { analyze, prescriptionData, setPrescriptionData } = analysisEngine;
-    const { saveToHistory, deleteFromHistory } = medicalHistory;
+    const { saveToHistory, deleteFromHistory } = prescriptionHistory;
+    const { deleteLabFromHistory } = labHistory;
 
     const handleAnalyzeClick = async () => {
         triggerHaptic('medium');
@@ -76,8 +81,8 @@ export const useAppWorkflow = ({
             try {
                 const suggestions = await getTreatmentSuggestions(dataToSave);
                 dataToSave.aiSuggestions = suggestions;
-            } catch (e) {
-                console.error("Could not fetch AI suggestions.", e);
+            } catch {
+                console.error("Could not fetch AI suggestions.");
                 showToast("Warning: AI clinical suggestions unavailable.", "warning");
             }
         }
@@ -155,10 +160,17 @@ export const useAppWorkflow = ({
         showToast("Record purged from history.", "info");
     };
 
+    const handleDeleteLab = (id: string) => {
+        triggerHaptic('heavy');
+        deleteLabFromHistory(id);
+        showToast("Lab report purged from history.", "info");
+    };
+
     return {
         handleAnalyzeClick,
         handleSaveReview,
         handleVerify,
-        handleDeleteReport
+        handleDeleteReport,
+        handleDeleteLab
     };
 };

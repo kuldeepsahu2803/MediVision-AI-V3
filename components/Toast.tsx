@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ToastType } from '../App.tsx';
+import { ToastType } from '@/shared/types/ui.types.ts';
 
 interface ToastProps {
   message: string;

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { PDFParse } from 'pdf-parse';
 import { JSDOM } from 'jsdom';
-import { PrescriptionData } from '../types.ts';
+import { PrescriptionData } from '@/features/prescriptions';
 
 // Setup JSDOM
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');

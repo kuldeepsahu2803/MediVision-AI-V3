@@ -1,12 +1,10 @@
 
 import React from 'react';
-import { PrescriptionData, Medicine } from '../types.ts';
-import { Spinner } from './Spinner.tsx';
-import { formatDate } from '../lib/utils.ts';
-import { AnalyzeIcon } from './icons/AnalyzeIcon.tsx';
-import { PrescriptionSkeleton } from './skeletons/PrescriptionSkeleton.tsx';
+import { PrescriptionData, Medicine } from '@/features/prescriptions';
+import { formatDate } from '@/lib/utils.ts';
+import { PrescriptionSkeleton } from '@/components/skeletons/PrescriptionSkeleton.tsx';
 import { motion } from 'framer-motion';
-import { Badge } from './ui/Badge.tsx';
+import { Badge } from '@/components/ui/Badge.tsx';
 
 interface ResultsDisplayProps {
   data: PrescriptionData | null;

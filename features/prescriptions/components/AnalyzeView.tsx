@@ -3,26 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ImageUploader } from './ImageUploader.tsx';
 import { ResultsDisplay } from './ResultsDisplay.tsx';
 import { OCRCorrectionSheet } from './clinical/OCRCorrectionSheet.tsx';
-import { Spinner } from './Spinner.tsx';
-import { PrescriptionData } from '../types.ts';
-import { formatDate } from '../lib/utils.ts';
-import { AnalyzeIcon } from './icons/AnalyzeIcon.tsx';
+import { Spinner } from '@/components/Spinner.tsx';
+import { usePrescription } from '@/features/prescriptions';
+import { formatDate } from '@/lib/utils.ts';
+import { AnalyzeIcon } from '@/components/icons/AnalyzeIcon.tsx';
+import { useHaptic } from '@/hooks/useHaptic.ts';
 
 interface AnalyzeViewProps {
-  imageFiles: File[];
-  imageUrls: string[];
-  prescriptionData: PrescriptionData | null;
-  isLoading: boolean;
-  error: string | null;
-  history: PrescriptionData[];
-  onAddImages: (files: File[]) => void;
-  onRemoveImage: (index: number) => void;
-  onClearQueue: () => void;
-  onAnalyze: () => void;
   onVerify: () => void;
-  onSelectHistory: (report: PrescriptionData) => void;
   onViewAll?: () => void;
-  triggerHaptic: (type: any) => void;
 }
 
 const m = motion as any;
@@ -91,7 +80,7 @@ const CameraScanner = ({ onCapture, onClose }: { onCapture: (file: File) => void
             const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             setStream(s);
             if (videoRef.current) videoRef.current.srcObject = s;
-        } catch (fallbackErr) {
+        } catch {
             alert("Camera access denied.");
             onClose();
         }
@@ -197,9 +186,24 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => (
 );
 
 export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
-  imageFiles, imageUrls, prescriptionData, isLoading, error, history,
-  onAddImages, onRemoveImage, onClearQueue, onAnalyze, onVerify, onSelectHistory, onViewAll, triggerHaptic
+  onVerify, onViewAll
 }) => {
+  const { 
+    imageFiles, 
+    imageUrls, 
+    prescriptionData, 
+    isLoading, 
+    error, 
+    history,
+    addImages: onAddImages,
+    removeImage: onRemoveImage,
+    clear: onClearQueue,
+    analyze: onAnalyze,
+    setPrescriptionData: onSelectHistory
+  } = usePrescription();
+
+  const { triggerHaptic } = useHaptic();
+
   const [showHelp, setShowHelp] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [correctionImage, setCorrectionImage] = useState<string | null>(null);
@@ -229,7 +233,7 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
     setShowScanner(false);
   };
 
-  const handleCorrectionConfirm = (croppedImage: string) => {
+  const handleCorrectionConfirm = () => {
     // In a real app, we'd convert the cropped image back to a File
     // For now, we'll just use the original file
     const file = imageFiles[imageFiles.length - 1]; // This is a bit hacky, but works for the demo
@@ -325,7 +329,7 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
                     <div className="flex items-center justify-between mb-6"><h3 className="font-black text-xl text-slate-900 dark:text-white tracking-tight">Recent Analysis</h3><button onClick={onViewAll} className="text-primary text-xs font-black uppercase tracking-widest hover:underline">View All</button></div>
                     <div className="flex-1 overflow-y-auto pr-2 space-y-4 no-scrollbar">
                       {recentHistory.length > 0 ? recentHistory.map((item, i) => (
-                          <m.div key={item.id} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} onClick={() => { triggerHaptic('light'); onSelectHistory(item); }} className="group flex items-center gap-5 p-4 rounded-3xl bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-zinc-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-white/20 cursor-pointer shadow-sm hover:shadow-md"><div className="size-16 rounded-2xl bg-slate-100 dark:bg-zinc-800 overflow-hidden shrink-0 border border-slate-200 dark:border-white/5">{item.imageUrls && item.imageUrls[0] ? <img src={item.imageUrls[0]} alt="Rx" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><span className="material-symbols-outlined text-3xl">description</span></div>}</div><div className="flex-1 min-w-0"><h5 className="text-sm font-black text-slate-900 dark:text-white truncate uppercase tracking-tight">{item.patientName || 'Untitled Prescription'}</h5><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Verified: {formatDate(item.date)}</p></div><span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-900/30">Verified</span></m.div>
+                          <m.div key={`rx-${item.id}`} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} onClick={() => { triggerHaptic('light'); onSelectHistory(item); }} className="group flex items-center gap-5 p-4 rounded-3xl bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-zinc-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-white/20 cursor-pointer shadow-sm hover:shadow-md"><div className="size-16 rounded-2xl bg-slate-100 dark:bg-zinc-800 overflow-hidden shrink-0 border border-slate-200 dark:border-white/5">{item.imageUrls && item.imageUrls[0] ? <img src={item.imageUrls[0]} alt="Rx" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><span className="material-symbols-outlined text-3xl">description</span></div>}</div><div className="flex-1 min-w-0"><h5 className="text-sm font-black text-slate-900 dark:text-white truncate uppercase tracking-tight">{item.patientName || 'Untitled Prescription'}</h5><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Verified: {formatDate(item.date)}</p></div><span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-900/30">Verified</span></m.div>
                         )) : (
                           <div className="flex-1 flex flex-col items-center justify-center py-12 px-6 text-center bg-slate-50/50 dark:bg-white/5 rounded-[2rem] border border-dashed border-slate-200 dark:border-white/10">
                             <div className="size-16 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 mb-4">

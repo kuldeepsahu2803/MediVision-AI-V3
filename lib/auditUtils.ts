@@ -1,6 +1,7 @@
 // lib/auditUtils.ts
 
-import { PrescriptionData, AuditEntry, Medicine } from '../types.ts';
+import { PrescriptionData, Medicine } from '@/features/prescriptions';
+import { AuditEntry } from '@/shared/types/audit.types';
 
 // Deep comparison for objects and arrays to avoid unnecessary audit logs
 const isDeepEqual = (obj1: any, obj2: any): boolean => {

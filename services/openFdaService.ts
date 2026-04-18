@@ -1,4 +1,4 @@
-import { FdaVerification } from '../types';
+import { FdaVerification } from '@/features/prescriptions';
 
 const BASE_URL = 'https://api.fda.gov/drug/label.json';
 
@@ -101,7 +101,7 @@ export const getDrugSuggestions = async (query: string): Promise<Partial<FdaVeri
             };
         }).filter((item: any) => item.standardName);
 
-    } catch (e) {
+    } catch {
         return [];
     }
 };

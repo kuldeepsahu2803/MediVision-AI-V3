@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Medicine, FdaVerification } from '../types';
+import { Medicine, FdaVerification } from '@/features/prescriptions';
 import { searchFdaDrug } from '../services/openFdaService';
 
 export const useDrugKnowledge = (medications: Medicine[]) => {

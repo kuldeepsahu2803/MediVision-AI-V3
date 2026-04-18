@@ -2,7 +2,7 @@
 import React from 'react';
 import { ShieldCheck, ShieldAlert, ShieldQuestion, Info } from 'lucide-react';
 import { cn } from '../../lib/utils.ts';
-import { ConfidenceLevel } from '../../types.ts';
+import { ConfidenceLevel } from '@/features/prescriptions';
 
 interface ConfidenceBadgeProps {
   confidence?: number;

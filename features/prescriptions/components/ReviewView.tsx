@@ -1,50 +1,30 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PrescriptionData, Medicine, VerificationResult, RxNormCandidate, AuditEntry } from '../types.ts';
+import { PrescriptionData, Medicine, VerificationResult, RxNormCandidate, usePrescription } from '@/features/prescriptions';
+import { useClinicalIntelligence } from '@/features/clinical-intelligence';
+import { AuditEntry } from '@/shared/types/audit.types';
 import { PatientContextHeader } from './clinical/PatientContextHeader.tsx';
 import { ConfidenceBadge } from './clinical/ConfidenceBadge.tsx';
 import { ClinicalAlertBanner } from './clinical/ClinicalAlertBanner.tsx';
-import { Spinner } from './Spinner.tsx';
-import { LockClosedIcon } from './icons/LockClosedIcon.tsx';
-import { ShareIcon } from './icons/ShareIcon.tsx';
-import { AdjustmentsIcon } from './icons/AdjustmentsIcon.tsx';
-import { HistoryIcon } from './icons/HistoryIcon.tsx';
-import { verifyPrescriptionMeds, verifyMedication } from '../services/medicationVerifier.ts';
+import { Spinner } from '@/components/Spinner.tsx';
+import { LockClosedIcon } from '@/components/icons/LockClosedIcon.tsx';
+import { ShareIcon } from '@/components/icons/ShareIcon.tsx';
+import { HistoryIcon } from '@/components/icons/HistoryIcon.tsx';
+import { verifyPrescriptionMeds, verifyMedication } from '@/services/medicationVerifier.ts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useHaptic } from '../hooks/useHaptic.ts';
-import { AutocompleteInput } from './ui/AutocompleteInput.tsx';
-import { FEATURE_FLAGS } from '../lib/featureFlags.ts';
-import { HoldToConfirmButton } from './ui/HoldToConfirmButton.tsx';
-import { Badge } from './ui/Badge.tsx';
+import { useHaptic } from '@/hooks/useHaptic.ts';
+import { AutocompleteInput } from '@/components/ui/AutocompleteInput.tsx';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut.ts';
+import { FEATURE_FLAGS } from '@/lib/featureFlags.ts';
+import { HoldToConfirmButton } from '@/components/ui/HoldToConfirmButton.tsx';
+import { Badge } from '@/components/ui/Badge.tsx';
+import { ClinicalStatusBadge } from '@/components/ui/ClinicalStatusBadge.tsx';
+import { saveDraft, getDraft } from '@/services/localDatabaseService.ts';
 import { HeaderCard } from './HeaderCard.tsx';
 import { PrescriptionImage } from './PrescriptionImage.tsx';
-import { Stepper } from './ui/Stepper.tsx';
+import { Stepper } from '@/components/ui/Stepper.tsx';
 
 // --- Clinical Verification Icons ---
-
-const VerifiedShield = (props: any) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4" opacity="0.6"/>
-  </svg>
-);
-
-const ReviewEye = (props: any) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3" opacity="0.6"/>
-  </svg>
-);
-
-const AlertShield = (props: any) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12" opacity="0.6"/><line x1="12" y1="16" x2="12.01" y2="16" opacity="0.6"/>
-  </svg>
-);
-
-const EyeSlashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-    </svg>
-);
 
 const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -98,79 +78,6 @@ const AuditTrailModal: React.FC<{ trail: AuditEntry[], onClose: () => void }> = 
                     <button onClick={onClose} className="btn-secondary px-8 py-2 rounded-xl text-sm font-bold">Close History</button>
                 </div>
             </motion.div>
-        </div>
-    );
-};
-
-const StatusBadge: React.FC<{ status: PrescriptionData['status'] }> = ({ status }) => {
-    const variants: Record<PrescriptionData['status'], any> = {
-        'AI-Extracted': 'info',
-        'User-Corrected': 'warning',
-        'Clinically-Verified': 'success',
-    };
-    return <Badge variant={variants[status]} size="xs">{status.replace('-', ' ')}</Badge>;
-};
-
-const VerificationStatusBadge: React.FC<{ 
-    result?: VerificationResult, 
-    humanConfirmed?: boolean, 
-    onClick?: () => void, 
-    isReverifying?: boolean 
-}> = ({ result, humanConfirmed, onClick, isReverifying }) => {
-    if (isReverifying) return <div className="p-1"><Spinner className="w-3.5 h-3.5" /></div>;
-    if (!result) return null;
-
-    if (humanConfirmed) {
-        return (
-            <motion.button 
-                whileTap={{ scale: 0.95 }}
-                onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-                className="focus:outline-none"
-            >
-                <Badge 
-                    variant="success" 
-                    size="xs" 
-                    icon={<VerifiedShield className="w-3.5 h-3.5" />}
-                    className="shadow-sm animate-glimmer cursor-pointer"
-                >
-                    Human Verified
-                </Badge>
-            </motion.button>
-        );
-    }
-
-    const config = {
-        'cyan': { variant: 'info' as const, icon: ReviewEye, text: 'DB Match', tooltip: 'High confidence RxNorm match. Human sign-off required.' },
-        'amber': { variant: 'warning' as const, icon: ReviewEye, text: 'Tentative', tooltip: 'Variant detected. Click bounding box to verify ink.' },
-        'rose': { variant: 'error' as const, icon: AlertShield, text: 'Review', tooltip: 'Safety flag: Ambiguous ink or invalid strength.' },
-        'gray': { variant: 'neutral' as const, icon: ReviewEye, text: 'AI Guess', tooltip: 'Raw extraction. No database match found.' },
-        'emerald': { variant: 'success' as const, icon: VerifiedShield, text: 'Verified', tooltip: 'Human confirmed.' }
-    };
-
-    const style = config[result.color] || config['gray'];
-    const Icon = style.icon;
-
-    return (
-        <div className="group relative">
-            <motion.button 
-                whileTap={{ scale: 0.95 }}
-                onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-                className="focus:outline-none"
-            >
-                <Badge 
-                    variant={style.variant} 
-                    size="xs" 
-                    icon={<Icon className="w-3.5 h-3.5" />}
-                    className="hover:brightness-95 transition-all cursor-pointer animate-pulse-ai"
-                >
-                    {style.text}
-                </Badge>
-            </motion.button>
-            
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-zinc-900 text-white text-[9px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl z-50">
-                {style.tooltip}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900" />
-            </div>
         </div>
     );
 };
@@ -242,6 +149,16 @@ const ResolutionModal: React.FC<{
     onSelect: (name: string) => void; 
     onClose: () => void 
 }> = ({ candidate, currentName, onSelect, onClose }) => {
+    // Keyboard Selection for Resolution
+    useKeyboardShortcut([
+        ...candidate.map((c, i) => ({
+            combo: { key: (i + 1).toString() },
+            callback: () => onSelect(c.name)
+        })),
+        { combo: { key: 'c' }, callback: () => onSelect(currentName) }, // C for Verbatim
+        { combo: { key: 'escape' }, callback: onClose }
+    ]);
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xl" onClick={onClose}>
             <motion.div 
@@ -281,6 +198,7 @@ const ResolutionModal: React.FC<{
                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">RxNorm ID: {c.rxcui} • {c.source}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
+                                    <div className="size-6 rounded-md bg-slate-100 dark:bg-white/10 flex items-center justify-center text-[10px] font-black text-slate-400 mr-2 border border-slate-200 dark:border-white/10">{i + 1}</div>
                                     <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">{c.score}% Match</span>
                                     <span className="material-symbols-outlined text-slate-300 group-hover:text-brand-blue transition-colors">chevron_right</span>
                                 </div>
@@ -299,9 +217,10 @@ const ResolutionModal: React.FC<{
                 <div className="p-6 border-t border-slate-100 dark:border-white/5 flex flex-col gap-3">
                     <button 
                         onClick={() => onSelect(currentName)} 
-                        className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-2xl transition-all"
+                        className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-2xl transition-all flex items-center justify-center gap-2"
                     >
                         Confirm Original Verbatim
+                        <span className="opacity-30 text-[10px]">[C]</span>
                     </button>
                     <button 
                         onClick={onClose} 
@@ -383,17 +302,18 @@ const ReasoningTrace: React.FC<{ reasoning?: string, verification?: Verification
 // --- Main View Component ---
 
 interface ReviewViewProps {
-  prescription: PrescriptionData | null;
-  imageUrls: string[] | null;
   onSave: (data: PrescriptionData) => Promise<void>;
   onVerify: (data: PrescriptionData) => Promise<void>;
 }
 
-export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls, onSave, onVerify }) => {
+export const ReviewView: React.FC<ReviewViewProps> = ({ onSave, onVerify }) => {
+  const { prescriptionData: prescription, imageUrls } = usePrescription();
+  const { triggerHaptic } = useHaptic();
+
+  const { triggerAnalysis } = useClinicalIntelligence();
   const [editableData, setEditableData] = useState<PrescriptionData | null>(null);
   const [mobileTab, setMobileTab] = useState<'image' | 'details'>('details');
   const [activeMedIndex, setActiveMedIndex] = useState<number | null>(null);
-  const [showOriginalImage, setShowOriginalImage] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -401,12 +321,8 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
 
-  const [imageFilters, setImageFilters] = useState({ contrast: false, brightness: false, grayscale: false });
-  const [showImageControls, setShowImageControls] = useState(false);
   const [resolutionTarget, setResolutionTarget] = useState<{ index: number, candidates: RxNormCandidate[] } | null>(null);
 
-  const { triggerHaptic } = useHaptic();
-  
   useEffect(() => {
     if (prescription) {
         setEditableData(prev => prev || JSON.parse(JSON.stringify(prescription)));
@@ -416,8 +332,22 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                 runVerification(prescription.medication, imageBase64);
             }
         }
+    } else {
+        // Try to load from drafts
+        const loadDraft = async () => {
+             const draft = await getDraft('active-review');
+             if (draft) setEditableData(draft);
+        };
+        loadDraft();
     }
   }, [prescription, imageUrls]);
+
+  // Auto-save drafts
+  useEffect(() => {
+    if (editableData) {
+        saveDraft({ ...editableData, id: 'active-review' });
+    }
+  }, [editableData]);
 
   const runVerification = async (meds: Medicine[], imageBase64?: string) => {
       setIsVerifying(true);
@@ -505,6 +435,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       if (!editableData) return;
       triggerHaptic('medium');
       await onSave(editableData);
+      triggerAnalysis();
   };
   
   const handleVerifyClick = async () => {
@@ -519,6 +450,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       triggerHaptic('success');
       setTimeout(async () => {
           await onVerify(editableData);
+          triggerAnalysis();
           setShowConfetti(false);
       }, 800);
   };
@@ -529,7 +461,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       triggerHaptic('medium');
       try {
           if (navigator.share) {
-              const { getPDFFile } = await import('../lib/pdfUtils.ts');
+              const { getPDFFile } = await import('@/lib/pdfUtils.ts');
               const file = await getPDFFile(editableData);
               const shareData = { files: [file], title: `Prescription Report - ${editableData.patientName}`, text: `RxSnap Analysis Report for ${editableData.patientName}.` };
               if (navigator.canShare && navigator.canShare(shareData)) {
@@ -549,17 +481,21 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
       }
   };
 
-  const transform = activeMedIndex !== null && editableData?.medication[activeMedIndex]?.coordinates 
-      ? { scale: 2, x: `${50 - (editableData.medication[activeMedIndex].coordinates![1] + editableData.medication[activeMedIndex].coordinates![3]) / 2 / 10}%`, y: `${50 - (editableData.medication[activeMedIndex].coordinates![0] + editableData.medication[activeMedIndex].coordinates![2]) / 2 / 10}%` }
-      : { scale: 1, x: 0, y: 0 };
-  
-  const getFilterString = () => {
-      const filters = [];
-      if (imageFilters.grayscale) filters.push('grayscale(100%)');
-      if (imageFilters.contrast) filters.push('contrast(150%)');
-      if (imageFilters.brightness) filters.push('brightness(120%)');
-      return filters.join(' ');
-  };
+  // Keyboard Shortcuts moved after declarations to fix hoisting issues
+  useKeyboardShortcut([
+    { combo: { key: 's', ctrl: true }, callback: () => handleSave() },
+    { combo: { key: 'enter', ctrl: true }, callback: () => handleVerifyClick() },
+    { combo: { key: 'n', alt: true }, callback: () => handleAddMed() },
+    ...((editableData?.medication || []).map((_, i) => ({
+        combo: { key: (i + 1).toString(), alt: true },
+        callback: () => handleSignOff(i)
+    }))),
+    { combo: { key: 'escape' }, callback: () => {
+        if (resolutionTarget) setResolutionTarget(null);
+        if (showAuditModal) setShowAuditModal(false);
+        setActiveMedIndex(null);
+    }}
+  ]);
 
   const renderImageViewer = () => (
       <PrescriptionImage 
@@ -594,7 +530,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                       >
                           <HistoryIcon className="w-6 h-6" />
                       </button>
-                      {editableData && <StatusBadge status={editableData.status} />}
+                      {editableData && <ClinicalStatusBadge status={editableData.status as any} />}
                   </div>
               </div>
 
@@ -644,7 +580,8 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                               <div className={`absolute left-0 top-0 bottom-0 w-2 ${med.humanConfirmed ? 'bg-brand-green' : (med.verification?.color === 'rose' ? 'bg-rose-500' : (med.verification?.color === 'amber' ? 'bg-amber-500' : 'bg-slate-300'))}`} />
                               
                               <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <motion.button
+                          <span className="text-[10px] font-bold text-slate-300 mr-2">#{i + 1}</span>
+                          <motion.button
                                       whileHover={{ scale: 1.1, rotate: 5 }}
                                       whileTap={{ scale: 0.9, rotate: -5 }}
                                       onClick={(e) => { e.stopPropagation(); handleDeleteMed(i); }}
@@ -658,9 +595,8 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                                   <div className="flex items-center justify-between mb-2">
                                       <ConfidenceBadge confidence={med.confidence} className="mb-1" />
                                       {med.humanConfirmed && (
-                                          <div className="flex items-center gap-1 text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                                              <VerifiedShield className="size-3" />
-                                              Verified
+                                          <div className="flex items-center gap-2">
+                                              <ClinicalStatusBadge status="Clinically-Verified" />
                                           </div>
                                       )}
                                   </div>
@@ -669,7 +605,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                                       value={med.name} 
                                       onChange={v => handleMedChange(i, 'name', v)} 
                                       fetchSuggestions={async (q) => { 
-                                          const { getDrugSuggestions } = await import('../services/openFdaService.ts'); 
+                                          const { getDrugSuggestions } = await import('@/services/openFdaService.ts'); 
                                           const res = await getDrugSuggestions(q); 
                                           return res.map(r => r.standardName || r.brandName || r.genericName || ''); 
                                       }} 
@@ -678,19 +614,20 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                                       className="text-lg font-black uppercase tracking-tight"
                                       rightElement={
                                           <div className="flex items-center gap-2">
-                                              <VerificationStatusBadge 
-                                                  isReverifying={reverifyingIndex === i} 
-                                                  result={med.verification} 
-                                                  humanConfirmed={med.humanConfirmed}
-                                                  onClick={() => { 
-                                                      const v = med.verification;
-                                                      if (v && (v.color === 'amber' || v.color === 'rose') && v.candidates?.length > 0) { 
-                                                          triggerHaptic('medium');
-                                                          setResolutionTarget({ index: i, candidates: v.candidates }); 
-                                                      } else {
-                                                          handleSignOff(i);
-                                                      }
-                                                  }} 
+                                              <ClinicalStatusBadge 
+                                                status={med.humanConfirmed ? 'Clinically-Verified' : (med.verification?.color === 'rose' ? 'Review' : (med.verification?.color === 'amber' ? 'Review' : 'AI-Extracted'))}
+                                                size="xs"
+                                                animate={reverifyingIndex === i}
+                                                className="cursor-pointer"
+                                                onClick={() => { 
+                                                    const v = med.verification;
+                                                    if (v && (v.color === 'amber' || v.color === 'rose') && v.candidates?.length > 0) { 
+                                                        triggerHaptic('medium');
+                                                        setResolutionTarget({ index: i, candidates: v.candidates }); 
+                                                    } else {
+                                                        handleSignOff(i);
+                                                    }
+                                                }}
                                               />
                                           </div>
                                       } 
@@ -723,9 +660,11 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
                           whileTap={{ scale: 0.98 }}
                           onClick={handleAddMed}
                           className="w-full py-6 rounded-[2rem] bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs"
+                          title="Alt + N"
                       >
                           <span className="material-symbols-outlined">add_circle</span>
                           Add Medication
+                          <span className="ml-2 opacity-30 text-[10px] hidden sm:inline">Alt+N</span>
                       </motion.button>
                   </div>
               </div>
@@ -849,14 +788,15 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ prescription, imageUrls,
     return (
         <div className="mt-auto p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-slate-800 z-20 flex gap-3 overflow-hidden shadow-[0_-5px_20px_rgba(0,0,0,0.1)] h-24">
             {showConfetti && <Confetti />}
-            <motion.button whileTap={{ scale: 0.96 }} onClick={handleShare} disabled={isSharing} className="flex-[0.3] btn-secondary py-3 rounded-xl font-semibold flex items-center justify-center text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10"><ShareIcon className="w-5 h-5" /></motion.button>
-            <motion.button whileTap={{ scale: 0.96 }} onClick={handleSave} className="flex-1 btn-secondary py-3 rounded-xl font-semibold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10">Save Draft</motion.button>
+            <motion.button whileTap={{ scale: 0.96 }} onClick={handleShare} disabled={isSharing} className="flex-[0.3] btn-secondary py-3 rounded-xl font-semibold flex items-center justify-center text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10" title="Share Analysis"><ShareIcon className="w-5 h-5" /></motion.button>
+            <motion.button whileTap={{ scale: 0.96 }} onClick={handleSave} className="flex-1 btn-secondary py-3 rounded-xl font-semibold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10" title="Ctrl + S">Save Draft <span className="ml-2 opacity-30 text-[10px] hidden lg:inline">Ctrl+S</span></motion.button>
             <HoldToConfirmButton 
                 onConfirm={handleVerifyClick}
                 label={unconfirmedCount > 0 ? `Verify ${unconfirmedCount} more` : "Final Sign-off"}
                 confirmLabel="Verification Locked"
                 className={`flex-1 btn-gradient text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 disabled:grayscale disabled:opacity-50 ${unconfirmedCount > 0 ? 'opacity-50 grayscale' : ''}`}
                 icon={<LockClosedIcon className="w-5 h-5"/>}
+                title="Ctrl + Enter"
             />
         </div>
     );

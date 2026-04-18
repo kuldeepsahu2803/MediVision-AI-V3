@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
 
 interface ProfileViewProps {
   user: { name: string; email: string; id: string } | null;

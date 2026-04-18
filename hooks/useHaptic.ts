@@ -35,7 +35,7 @@ export const useHaptic = () => {
           navigator.vibrate([50, 50, 50, 50, 50]); 
           break;
       }
-    } catch (e) {
+    } catch {
       // Ignore errors on unsupported devices
     }
   }, []);

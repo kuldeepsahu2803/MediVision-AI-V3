@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Cloud, CloudOff, RefreshCw, CheckCircle } from 'lucide-react';
+import { CloudOff, RefreshCw, CheckCircle } from 'lucide-react';
 import { cn } from '../../lib/utils.ts';
 
 interface SyncStatusBarProps {

@@ -1,4 +1,4 @@
-import { VerificationResult } from '../types.ts';
+import { VerificationResult } from '@/features/prescriptions';
 
 const CACHE_KEY_PREFIX = 'rx_verify_';
 const CACHE_TTL_DAYS = 7;

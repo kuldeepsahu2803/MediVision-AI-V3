@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import BrandLogo from './BrandLogo.tsx';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface LandingViewProps {
   onStart: () => void;

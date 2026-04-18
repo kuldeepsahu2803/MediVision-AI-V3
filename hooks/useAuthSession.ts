@@ -40,7 +40,7 @@ export const useAuthSession = () => {
       setCloudStatus('ENABLED');
       return true;
     } catch (e: any) {
-      console.warn("Clinical Infrastructure: Cloud node unreachable.", e);
+      console.warn("Clinical Infrastructure: Cloud node unreachable.");
       setCloudStatus('DEGRADED');
       // If it's a fetch error, it's likely a configuration or network issue
       if (e.message?.includes('Failed to fetch')) {

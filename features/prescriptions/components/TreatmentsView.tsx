@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { PrescriptionData, AiSuggestions, Medicine } from '../types.ts';
-import { getTreatmentSuggestions, getDrugReferenceInfo, DrugReference } from '../services/geminiService.ts';
-import { getDrugInteractions } from '../services/rxNormService.ts';
-import { Spinner } from './Spinner.tsx';
+import { AiSuggestions, Medicine, usePrescription } from '@/features/prescriptions';
+import { getTreatmentSuggestions, getDrugReferenceInfo, DrugReference } from '@/services/geminiService.ts';
+import { getDrugInteractions } from '@/services/rxNormService.ts';
+import { Spinner } from '@/components/Spinner.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import { exportSinglePDF } from '../lib/pdfUtils.ts';
-import { useHaptic } from '../hooks/useHaptic.ts';
+import { exportSinglePDF } from '@/lib/pdfUtils.ts';
+import { useHaptic } from '@/hooks/useHaptic.ts';
 
 // --- Reimagined Clinical Icons (Medical-First Design) ---
 
@@ -206,7 +206,8 @@ const MedicineRow: React.FC<{
 };
 
 // --- Main Component ---
-export const TreatmentsView: React.FC<{ prescription: PrescriptionData | null }> = ({ prescription }) => {
+export const TreatmentsView: React.FC = () => {
+  const { prescriptionData: prescription } = usePrescription();
   const [suggestions, setSuggestions] = useState<AiSuggestions | null>(null);
   const [rxInteractions, setRxInteractions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);

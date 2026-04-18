@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { GoogleIcon } from './icons/GoogleIcon.tsx';
 import BrandLogo from './BrandLogo.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Spinner } from './Spinner.tsx';
@@ -48,7 +47,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
             email: data.user.email || '' 
           });
         }
-    } catch (e) {
+    } catch {
         setError("Network Error: Could not connect to the clinical authentication node.");
     } finally {
         setLoading(false);
@@ -61,7 +60,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -75,7 +74,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
         setMessage('Registration successful! Please check your email to confirm your account.');
         setView('login');
       }
-    } catch (err) {
+    } catch {
       setError("Infrastructure Error: Cloud registration is unavailable.");
     } finally {
       setLoading(false);
@@ -95,7 +94,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
           setMessage('Check your email for the password reset link.');
           setView('login');
         }
-      } catch (err) {
+      } catch {
         setError("Reset service unavailable.");
       } finally {
         setLoading(false);

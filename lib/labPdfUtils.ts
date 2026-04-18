@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { BloodTestReport } from '../types.ts';
+import { BloodTestReport } from '@/features/blood-tests';
 
 export const generateBloodReportPdf = (report: BloodTestReport) => {
   const doc = new jsPDF();

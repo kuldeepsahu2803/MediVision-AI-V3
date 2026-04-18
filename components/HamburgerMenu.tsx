@@ -1,16 +1,15 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { GoogleIcon } from './icons/GoogleIcon.tsx';
-import { PrescriptionData } from '../types.ts';
-import { SunIcon } from './icons/SunIcon.tsx';
-import { MoonIcon } from './icons/MoonIcon.tsx';
-import { ComputerDesktopIcon } from './icons/ComputerDesktopIcon.tsx';
-import { exportBulkPDF } from '../lib/pdfUtils.ts';
-import { Spinner } from './Spinner.tsx';
-import { useHaptic } from '../hooks/useHaptic.ts';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AppTab } from '../constants/navigation.ts';
-import { ProfileView } from './ProfileView.tsx';
+import React, { useState, useEffect, useCallback } from 'react';
+import { PrescriptionData } from '@/features/prescriptions';
+import { SunIcon } from '@/components/icons/SunIcon.tsx';
+import { MoonIcon } from '@/components/icons/MoonIcon.tsx';
+import { ComputerDesktopIcon } from '@/components/icons/ComputerDesktopIcon.tsx';
+import { Spinner } from '@/components/Spinner.tsx';
+import { useHaptic } from '@/hooks/useHaptic.ts';
+import { motion } from 'framer-motion';
+import { AppTab } from '@/constants/navigation.ts';
+import { ProfileView } from '@/components/ProfileView.tsx';
+import { GoogleIcon } from '@/components/icons/GoogleIcon.tsx';
 
 // --- ICONS ---
 const UserIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -152,7 +151,6 @@ interface HamburgerMenuProps {
 
 export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
     closeMenu,
-    setActiveTab,
     isLoggedIn,
     user,
     history,

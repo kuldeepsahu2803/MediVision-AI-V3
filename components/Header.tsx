@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
-import { HamburgerMenuIcon } from './icons/HamburgerMenuIcon.tsx';
-import { AnalyzeIcon } from './icons/AnalyzeIcon.tsx';
-import { ClipboardDocumentCheckIcon } from './icons/ClipboardDocumentCheckIcon.tsx';
-import { FolderIcon } from './icons/FolderIcon.tsx';
-import { StethoscopeIcon } from './icons/StethoscopeIcon.tsx';
-import { SettingsIcon } from './icons/SettingsIcon.tsx';
-import BrandLogo from './BrandLogo.tsx';
+import { HamburgerMenuIcon } from '@/components/icons/HamburgerMenuIcon.tsx';
+import { AnalyzeIcon } from '@/components/icons/AnalyzeIcon.tsx';
+import { ClipboardDocumentCheckIcon } from '@/components/icons/ClipboardDocumentCheckIcon.tsx';
+import { FolderIcon } from '@/components/icons/FolderIcon.tsx';
+import { StethoscopeIcon } from '@/components/icons/StethoscopeIcon.tsx';
+import { SettingsIcon } from '@/components/icons/SettingsIcon.tsx';
+import BrandLogo from '@/components/BrandLogo.tsx';
 import { motion } from 'framer-motion';
-import { AppTab } from '../constants/navigation.ts';
-import { Cloud, CloudOff, AlertCircle } from 'lucide-react';
+import { AppTab } from '@/constants/navigation.ts';
+import { SyncStatusIndicator } from './sync/SyncStatus.tsx';
 
 interface HeaderProps {
   activeTab: AppTab;
@@ -32,7 +32,6 @@ export const Header: React.FC<HeaderProps> = ({
   hasData,
   showTreatments, 
   onLogoClick,
-  cloudStatus,
   selectedModule
 }) => {
   const navLinks: { id: AppTab; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>>; color: string; bg: string }[] = [
@@ -60,19 +59,6 @@ export const Header: React.FC<HeaderProps> = ({
     return links;
   }, [showTreatments, selectedModule]);
 
-  const renderCloudStatus = () => {
-    switch (cloudStatus) {
-      case 'ENABLED':
-        return <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"><Cloud className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest">Online</span></div>;
-      case 'LOCAL_ONLY':
-        return <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"><CloudOff className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest">Local Only</span></div>;
-      case 'DEGRADED':
-        return <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"><AlertCircle className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest">Degraded</span></div>;
-      default:
-        return <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20 animate-pulse"><Cloud className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest">Syncing</span></div>;
-    }
-  };
-
   return (
     <header className="relative w-full z-40 transition-all duration-300 pt-[env(safe-area-inset-top,0px)]">
       <div className="absolute inset-0 bg-white/95 dark:bg-black/90 border-b border-light-border dark:border-dark-border shadow-sm backdrop-blur-xl" />
@@ -83,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
               <BrandLogo variant="header" className="transform group-hover:scale-105 transition-transform" />
             </div>
             <div className="hidden sm:block">
-              {renderCloudStatus()}
+              <SyncStatusIndicator />
             </div>
           </div>
           

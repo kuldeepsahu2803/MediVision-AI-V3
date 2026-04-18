@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Badge } from './ui/Badge.tsx';
+import { Badge } from '@/components/ui/Badge.tsx';
 
 interface HeaderCardProps {
   patientName: string;
@@ -19,8 +19,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   doctorName, 
   patientNameConfidence, 
   dateConfidence, 
-  doctorNameConfidence,
-  onEdit 
+  doctorNameConfidence 
 }) => {
   const getConfidenceVariant = (conf?: number) => {
     if (conf === undefined) return 'neutral';

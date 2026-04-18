@@ -281,7 +281,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
     );
 };
 
-const AccessibilityModule: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const AccessibilityModule: React.FC = () => {
     const [textSize, setTextSize] = useState(100);
     const [highContrast, setHighContrast] = useState(false);
     const [colorBlindMode, setColorBlindMode] = useState(false);
@@ -360,7 +360,7 @@ const AccessibilityModule: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
 };
 
-const ClinicalEngineModule: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const ClinicalEngineModule: React.FC = () => {
     const [sensitivity, setSensitivity] = useState(85);
     const [realTimeSync, setRealTimeSync] = useState(true);
     const [testSig, setTestSig] = useState('1 tab po qid ac');
@@ -466,7 +466,7 @@ const ClinicalEngineModule: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
 };
 
-const BillingModule: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const BillingModule: React.FC = () => {
     const scansUsed = 842;
     const scansLimit = 1000;
     const percentage = (scansUsed / scansLimit) * 100;
@@ -539,7 +539,7 @@ const BillingModule: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
 };
 
-const IntegrationsModule: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const IntegrationsModule: React.FC = () => {
     return (
         <div className="p-8 md:p-12 space-y-12">
             <div className="space-y-1">

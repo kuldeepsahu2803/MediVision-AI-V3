@@ -97,6 +97,10 @@ body {
   font-size: 1rem;
 }
 
+*:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-light-bg dark:ring-offset-dark-bg transition-all duration-200;
+}
+
 .glass-panel {
   @apply backdrop-blur-2xl bg-light-panel dark:bg-dark-panel border border-light-border dark:border-dark-border shadow-xl;
 }
@@ -161,11 +165,11 @@ input[type='range']::-moz-range-thumb {
 }
 
 .clinical-label {
-  @apply text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-1.5 flex items-center justify-between gap-2;
+  @apply text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] mb-1.5 flex items-center justify-between gap-2;
 }
 
 .clinical-value {
-  @apply text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-tight;
+  @apply text-sm font-bold text-slate-950 dark:text-white tracking-tight leading-tight;
 }
 
 .clinical-card {

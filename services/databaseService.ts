@@ -1,11 +1,17 @@
 
 import { supabase } from '../lib/supabaseClient.ts';
-import { PrescriptionData, BloodTestReport, ClinicalInsight } from '../types.ts';
+import { PrescriptionData } from '@/features/prescriptions';
+import { BloodTestReport } from '@/features/blood-tests';
+import { ClinicalInsight } from '@/features/clinical-intelligence';
 import * as localDB from './localDatabaseService.ts';
 import * as storageService from './storageService.ts';
+import * as syncService from './syncService.ts';
 
 // Helper to check if string is a valid UUID
-const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+const isUUID = (str: any) => {
+  if (typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+};
 
 /**
  * Saves a clinical insight.
@@ -27,6 +33,9 @@ export const saveClinicalInsight = async (insight: ClinicalInsight): Promise<voi
   const { error } = await supabase.from('clinical_insights').insert([payload]);
   if (error) {
     console.error("Clinical Insight Save Error:", error);
+    if (error.message.includes('clinical_insights')) {
+      throw new Error(`Clinical Insights table not found. Please run the setup script in Supabase SQL Editor.`);
+    }
     throw new Error(`Failed to save clinical insight: ${error.message}`);
   }
 };
@@ -64,27 +73,26 @@ export const getLatestClinicalInsight = async (): Promise<ClinicalInsight | null
 
 /**
  * Saves a prescription. 
- * If user is logged in: uploads assets -> saves to Cloud DB.
- * If user is guest: saves to Local DB.
+ * Offline-first: Saves to local DB then enqueues for synchronization.
  */
-export const savePrescription = async (data: PrescriptionData): Promise<void> => {
-  // Use getSession for broader compatibility as per engineering requirement
+export const savePrescription = async (data: PrescriptionData, forceCloud: boolean = false): Promise<void> => {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   
-  if (!user) {
-    console.log("User not logged in, saving to local DB");
-    await localDB.saveToLocalDB(data);
+  if (!user || !forceCloud) {
+    console.log("Routing prescription save via SyncManager");
+    await syncService.syncManager.enqueue('prescription', isUUID(data.id) ? 'update' : 'create', data);
     return;
   }
 
-  console.log(`Saving prescription for user: ${user.id}`);
+  console.log(`Performing Cloud Sync for prescription: ${data.id}`);
 
   // 1. Upload Assets (Image & PDF)
   const { imagePath, pdfPath } = await storageService.uploadPrescriptionAssets(user.id, data);
 
   // 2. Prepare Data for Postgres
-  const { imageUrls, ...cleanData } = data;
+  const cleanData = { ...data };
+  delete (cleanData as any).imageUrls;
   
   // Safely parse date to avoid "Invalid time value" errors
   let formattedDate: string;
@@ -96,7 +104,7 @@ export const savePrescription = async (data: PrescriptionData): Promise<void> =>
     } else {
       formattedDate = parsedDate.toISOString();
     }
-  } catch (e) {
+  } catch {
     formattedDate = new Date().toISOString();
   }
   
@@ -125,24 +133,29 @@ export const savePrescription = async (data: PrescriptionData): Promise<void> =>
 
   if (dbError) {
       console.error("Database Save Error:", dbError);
+      if (dbError.message.includes('prescriptions')) {
+        throw new Error(`Prescriptions table not found. Please run the setup script in Supabase SQL Editor.`);
+      }
       throw new Error(`Failed to save prescription: ${dbError.message}`);
   }
 };
 
 /**
  * Retrieves all prescriptions.
- * If user is logged in: fetches from Cloud DB.
- * If user is guest: fetches from Local DB.
+ * Merges Cloud and Local data to ensure unsynced drafts are visible.
  */
 export const getAllPrescriptions = async (): Promise<PrescriptionData[]> => {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   
+  const localItems = await localDB.getFromLocalDB();
+  
   if (!user) {
-    return await localDB.getFromLocalDB();
+    return localItems;
   }
 
-  const { data, error } = await supabase
+  // Fetch from Cloud
+  const { data: cloudData, error } = await supabase
     .from('prescriptions')
     .select('*')
     .eq('user_id', user.id)
@@ -150,19 +163,42 @@ export const getAllPrescriptions = async (): Promise<PrescriptionData[]> => {
 
   if (error) {
     console.error("Error fetching prescriptions:", error);
-    return [];
+    return localItems;
   }
 
-  return data.map((row: any) => {
+  const cloudItems: PrescriptionData[] = cloudData.map((row: any) => {
     const pData = row.full_data;
     return {
       ...pData,
-      id: row.id, // Must use the DB UUID
+      id: row.id,
       status: row.status,
       imageUrls: row.image_path ? [row.image_path] : (pData.imageUrls || []),
       pdfUrl: row.pdf_path,
-      timestamp: row.created_at // Use server timestamp for accurate history
+      timestamp: row.created_at
     };
+  });
+
+  // MERGE LOGIC:
+  // 1. Start with Cloud Items.
+  // 2. Overlay Local Items that are NOT synced or have conflicts.
+  // 3. Add Local Items that don't exist in Cloud yet.
+  
+  const mergedMap = new Map<string, PrescriptionData>();
+  
+  cloudItems.forEach(item => mergedMap.set(item.id, item));
+  
+  localItems.forEach(item => {
+    const existing = mergedMap.get(item.id);
+    // If local version is newer or has sync metadata, prefer it
+    if (!existing || item.sync?.status !== 'synced') {
+        mergedMap.set(item.id, item);
+    }
+  });
+
+  return Array.from(mergedMap.values()).sort((a, b) => {
+    const dateA = new Date(a.timestamp || a.date).getTime();
+    const dateB = new Date(b.timestamp || b.date).getTime();
+    return dateB - dateA;
   });
 };
 
@@ -195,21 +231,24 @@ export const deletePrescription = async (id: string): Promise<void> => {
 /**
  * Saves a lab report.
  */
-export const saveLabReport = async (data: BloodTestReport): Promise<void> => {
+export const saveLabReport = async (data: BloodTestReport, forceCloud: boolean = false): Promise<void> => {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   
-  if (!user) {
-    // For now, we don't have local DB for lab reports, but we could add it
-    console.warn("User not logged in, lab reports currently require cloud account");
+  if (!user || !forceCloud) {
+    console.log("Routing lab report save via SyncManager");
+    await syncService.syncManager.enqueue('lab', isUUID(data.id) ? 'update' : 'create', data);
     return;
   }
+
+  console.log(`Performing Cloud Sync for lab report: ${data.id}`);
 
   // 1. Upload Assets
   const { imagePath, pdfPath } = await storageService.uploadLabReportAssets(user.id, data);
 
   // 2. Prepare Payload
-  const { imageUrls, ...cleanData } = data;
+  const cleanData = { ...data };
+  delete (cleanData as any).imageUrls;
   
   const payload: any = {
     user_id: user.id,
@@ -232,6 +271,9 @@ export const saveLabReport = async (data: BloodTestReport): Promise<void> => {
   const { error } = await query;
   if (error) {
     console.error("Lab Report Save Error:", error);
+    if (error.message.includes('lab_reports')) {
+      throw new Error(`Lab Reports table not found. Please run the setup script in Supabase SQL Editor.`);
+    }
     throw new Error(`Failed to save lab report: ${error.message}`);
   }
 };
@@ -243,9 +285,13 @@ export const getAllLabReports = async (): Promise<BloodTestReport[]> => {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   
-  if (!user) return [];
+  const localItems = await localDB.getLabsFromLocalDB();
+  
+  if (!user) {
+    return localItems;
+  }
 
-  const { data, error } = await supabase
+  const { data: cloudData, error } = await supabase
     .from('lab_reports')
     .select('*')
     .eq('user_id', user.id)
@@ -253,10 +299,10 @@ export const getAllLabReports = async (): Promise<BloodTestReport[]> => {
 
   if (error) {
     console.error("Error fetching lab reports:", error);
-    return [];
+    return localItems;
   }
 
-  return data.map((row: any) => ({
+  const cloudItems: BloodTestReport[] = cloudData.map((row: any) => ({
     ...row.full_data,
     id: row.id,
     status: row.status,
@@ -264,6 +310,21 @@ export const getAllLabReports = async (): Promise<BloodTestReport[]> => {
     pdfUrl: row.pdf_path,
     timestamp: row.created_at
   }));
+
+  const mergedMap = new Map<string, BloodTestReport>();
+  cloudItems.forEach(item => mergedMap.set(item.id, item));
+  localItems.forEach(item => {
+    const existing = mergedMap.get(item.id);
+    if (!existing || item.sync?.status !== 'synced') {
+        mergedMap.set(item.id, item);
+    }
+  });
+
+  return Array.from(mergedMap.values()).sort((a, b) => {
+    const dateA = new Date(a.timestamp || a.date).getTime();
+    const dateB = new Date(b.timestamp || b.date).getTime();
+    return dateB - dateA;
+  });
 };
 
 /**

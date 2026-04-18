@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { PrescriptionData } from '../types.ts';
+import { PrescriptionData } from '@/features/prescriptions';
 import { analyzePrescription } from '../services/geminiService.ts';
 import { preprocessImageForOCR } from '../lib/imageProcessing.ts';
 import { verifyPrescriptionMeds } from '../services/medicationVerifier.ts';
 
-export const useAnalysisEngine = (isLoggedIn: boolean) => {
+export const useAnalysisEngine = () => {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [prescriptionData, setPrescriptionData] = useState<PrescriptionData | null>(null);

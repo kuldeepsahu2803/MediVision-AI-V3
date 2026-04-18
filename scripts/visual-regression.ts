@@ -10,7 +10,7 @@ import pixelmatch from 'pixelmatch';
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 global.window = dom.window as any;
 global.document = dom.window.document;
-(dom.window as any).requestAnimationFrame = (callback: FrameRequestCallback) => setTimeout(() => callback(Date.now()), 16) as any;
+(dom.window as any).requestAnimationFrame = (callback: (time: number) => void) => setTimeout(() => callback(Date.now()), 16) as any;
 (dom.window as any).cancelAnimationFrame = (id: number) => clearTimeout(id as any);
 Object.defineProperty(global, 'navigator', {
     value: dom.window.navigator,
@@ -20,7 +20,7 @@ Object.defineProperty(global, 'navigator', {
 global.atob = (str: string) => Buffer.from(str, 'base64').toString('binary');
 global.btoa = (str: string) => Buffer.from(str, 'binary').toString('base64');
 global.HTMLCanvasElement = dom.window.HTMLCanvasElement;
-global.requestAnimationFrame = (callback: FrameRequestCallback) => setTimeout(() => callback(Date.now()), 16) as any;
+global.requestAnimationFrame = (callback: (time: number) => void) => setTimeout(() => callback(Date.now()), 16) as any;
 global.cancelAnimationFrame = (id: number) => clearTimeout(id as any);
 
 const GOLDEN_DIR = path.join(process.cwd(), 'tests/goldens');

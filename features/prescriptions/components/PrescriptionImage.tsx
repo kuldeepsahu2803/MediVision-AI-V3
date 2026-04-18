@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AdjustmentsIcon } from './icons/AdjustmentsIcon.tsx';
-import { useHaptic } from '../hooks/useHaptic.ts';
-import { Medicine } from '../types.ts';
+import { AdjustmentsIcon } from '@/components/icons/AdjustmentsIcon.tsx';
+import { useHaptic } from '@/hooks/useHaptic.ts';
+import { Medicine } from '@/features/prescriptions';
 
 interface PrescriptionImageProps {
   imageUrls: string[] | null;

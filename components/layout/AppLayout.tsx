@@ -2,8 +2,9 @@ import React from 'react';
 import { Header } from '../Header.tsx';
 import { Footer } from '../Footer.tsx';
 import { HamburgerMenu } from '../HamburgerMenu.tsx';
-import { PrescriptionData } from '../../types.ts';
+import { usePrescription } from '@/features/prescriptions';
 import { AppTab } from '../../constants/navigation.ts';
+import { OfflineBanner } from '../sync/SyncStatus.tsx';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -11,9 +12,7 @@ interface AppLayoutProps {
   setActiveTab: (tab: AppTab) => void;
   isLoggedIn: boolean;
   isGuest: boolean;
-  hasData: boolean;
   user: any;
-  history: PrescriptionData[];
   showTreatments: boolean;
   setShowTreatments: (show: boolean) => void;
   isMenuOpen: boolean;
@@ -33,9 +32,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   setActiveTab,
   isLoggedIn,
   isGuest,
-  hasData,
   user,
-  history,
   showTreatments,
   setShowTreatments,
   isMenuOpen,
@@ -48,8 +45,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   cloudStatus,
   selectedModule
 }) => {
+  const { history, prescriptionData } = usePrescription();
+  const hasData = !!prescriptionData;
   return (
     <div className="flex flex-col min-h-screen w-full relative bg-light-bg dark:bg-dark-bg text-slate-900 dark:text-slate-100 overflow-y-auto overflow-x-hidden">
+      <OfflineBanner />
       {/* 
           Sticky Navigation Header:
           Enhanced with sticky top-0 and z-index to ensure it floats 

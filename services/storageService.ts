@@ -1,10 +1,14 @@
 import { supabase } from '../lib/supabaseClient.ts';
-import { PrescriptionData, BloodTestReport } from '../types.ts';
+import { PrescriptionData } from '@/features/prescriptions';
+import { BloodTestReport } from '@/features/blood-tests';
 import { getPDFFile } from '../lib/pdfUtils.ts';
 import { getLabPDFBlob } from '../lib/labPdfUtils.ts';
 
 // Helper to check if string is a valid UUID
-const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+const isUUID = (str: any) => {
+  if (typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+};
 
 const dataURLToBlob = async (url: string): Promise<Blob> => {
   if (url.startsWith('blob:')) {
@@ -51,6 +55,9 @@ export const uploadPrescriptionAssets = async (userId: string, data: Prescriptio
                     });
 
                 if (uploadError) {
+                    if (uploadError.message.includes('Bucket not found')) {
+                        throw new Error(`Storage bucket 'prescriptions' not found. Please create it in the Supabase Dashboard.`);
+                    }
                     throw new Error(`Cloud image storage failed: ${uploadError.message}`);
                 } else {
                     const { data: publicUrlData } = supabase.storage
@@ -80,6 +87,9 @@ export const uploadPrescriptionAssets = async (userId: string, data: Prescriptio
             });
             
         if (pdfError) {
+            if (pdfError.message.includes('Bucket not found')) {
+                throw new Error(`Storage bucket 'reports' not found. Please create it in the Supabase Dashboard.`);
+            }
             throw new Error(`PDF report storage failed: ${pdfError.message}`);
         } else {
             const { data: pdfUrlData } = supabase.storage
@@ -87,8 +97,8 @@ export const uploadPrescriptionAssets = async (userId: string, data: Prescriptio
                 .getPublicUrl(pdfName);
             pdfPath = pdfUrlData.publicUrl;
         }
-    } catch (e: any) {
-        console.error("Clinical document storage failed:", e);
+    } catch (err: any) {
+        console.error("Clinical document storage failed:", err);
         // We allow the process to continue even if PDF storage fails, as metadata is more critical
     }
 
@@ -117,7 +127,11 @@ export const uploadLabReportAssets = async (userId: string, data: BloodTestRepor
                     });
 
                 if (uploadError) {
-                    console.error("Lab image upload error:", uploadError);
+                    if (uploadError.message.includes('Bucket not found')) {
+                        console.error("Storage bucket 'lab_reports' not found. Please create it in the Supabase Dashboard.");
+                    } else {
+                        console.error("Lab image upload error:", uploadError);
+                    }
                 } else {
                     const { data: publicUrlData } = supabase.storage
                         .from('lab_reports')
@@ -146,15 +160,19 @@ export const uploadLabReportAssets = async (userId: string, data: BloodTestRepor
             });
             
         if (pdfError) {
-            console.error("Lab PDF upload error:", pdfError);
+            if (pdfError.message.includes('Bucket not found')) {
+                console.error("Storage bucket 'lab_reports' not found. Please create it in the Supabase Dashboard.");
+            } else {
+                console.error("Lab PDF upload error:", pdfError);
+            }
         } else {
             const { data: pdfUrlData } = supabase.storage
                 .from('lab_reports')
                 .getPublicUrl(pdfName);
             pdfPath = pdfUrlData.publicUrl;
         }
-    } catch (e: any) {
-        console.error("Lab PDF generation/upload failed:", e);
+    } catch {
+        console.error("Lab PDF generation/upload failed");
     }
 
     return { imagePath, pdfPath };

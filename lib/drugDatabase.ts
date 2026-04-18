@@ -1,6 +1,6 @@
 // lib/drugDatabase.ts
 
-import { Medicine } from '../types.ts';
+import { Medicine } from '@/features/prescriptions';
 
 // --- Mock Drug Database ---
 // This simulates a real drug database like RxNorm.

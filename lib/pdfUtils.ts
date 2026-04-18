@@ -1,4 +1,4 @@
-import { PrescriptionData, Medicine } from '../types.ts';
+import { PrescriptionData } from '@/features/prescriptions';
 import { logo as logoBase64 } from './pdfAssets.ts';
 import { formatDate } from './utils.ts';
 import { normalizeForPDF, validatePDFText } from '../services/pdfNormalizationService.ts';
@@ -87,7 +87,7 @@ export const generateDoc = async (report: PrescriptionData): Promise<any> => {
     if (logoBase64 && isSafeBase64Image(logoBase64)) {
         try {
             doc.addImage(logoBase64, 'PNG', margin, currentY - 20, 28, 28);
-        } catch (e) {
+        } catch {
             doc.setFillColor(...THEME.colors.primary);
             doc.circle(margin + 14, currentY - 6, 14, 'F');
         }
@@ -401,6 +401,11 @@ export const exportSinglePDF = async (report: PrescriptionData) => {
 export const getPDFBlobUrl = async (report: PrescriptionData) => {
     const doc = await generateDoc(report);
     return doc.output('bloburl');
+};
+
+export const getPDFBlob = async (report: PrescriptionData) => {
+    const doc = await generateDoc(report);
+    return doc.output('blob');
 };
 
 export const getPDFFile = async (report: PrescriptionData) => {

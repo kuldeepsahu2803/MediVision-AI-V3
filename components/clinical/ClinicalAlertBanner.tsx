@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { cn } from '../../lib/utils.ts';
-import { ClinicalSeverity } from '../../types.ts';
+import { ClinicalSeverity } from '@/features/clinical-intelligence';
 
 interface ClinicalAlertBannerProps {
   severity: ClinicalSeverity;

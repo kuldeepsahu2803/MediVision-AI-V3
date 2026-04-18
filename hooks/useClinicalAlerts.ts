@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
-import { ClinicalInsight, ClinicalAlert, PrescriptionData, BloodTestReport } from '../types.ts';
+import { ClinicalInsight } from '@/features/clinical-intelligence';
+import { PrescriptionData } from '@/features/prescriptions';
+import { BloodTestReport } from '@/features/blood-tests';
 import * as dbService from '../services/databaseService.ts';
 import { ClinicalEngine } from '../services/clinicalIntelligence.ts';
 import { useAuthSession } from './useAuthSession.ts';

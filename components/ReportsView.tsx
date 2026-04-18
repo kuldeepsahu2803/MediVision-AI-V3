@@ -1,16 +1,26 @@
 
 import React, { useState, useMemo } from 'react';
-import { PrescriptionData, BloodTestReport } from '../types.ts';
+import { PrescriptionData, usePrescription } from '@/features/prescriptions';
+import { BloodTestReport, useLab } from '@/features/blood-tests';
 import { ArchiveFilterBar } from './clinical/ArchiveFilterBar.tsx';
-import { SyncStatusBar } from './clinical/SyncStatusBar.tsx';
-import { motion, useMotionValue, useTransform, AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m, useMotionValue, useTransform, motion } from 'framer-motion';
 import { TrashIcon } from './icons/TrashIcon.tsx';
+import { useUI } from '../context/UIContext.tsx';
 import { FolderIcon } from './icons/FolderIcon.tsx';
 import { DownloadIcon } from './icons/DownloadIcon.tsx';
-import { exportSinglePDF, getPDFBlobUrl } from '../lib/pdfUtils.ts';
+import { exportSinglePDF, getPDFBlobUrl, getPDFBlob } from '../lib/pdfUtils.ts';
 import { Spinner } from './Spinner.tsx';
 import { ReportCardSkeleton } from './skeletons/ReportCardSkeleton.tsx';
 import { AnalyzeIcon } from './icons/AnalyzeIcon.tsx';
+import { Checkbox } from './ui/Checkbox.tsx';
+import JSZip from 'jszip';
+import { DraftIndicator } from './sync/DraftIndicator.tsx';
+import { SyncQueueView } from './sync/SyncQueueView.tsx';
+import { RefreshCw, List } from 'lucide-react';
+import { ConflictResolutionModal } from './sync/ConflictResolutionModal.tsx';
+import { cn } from '@/lib/utils';
+import * as syncService from '@/services/syncService';
+import * as localDB from '@/services/localDatabaseService';
 
 // --- Icons ---
 const EyeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -71,12 +81,14 @@ const groupReportsByDate = (reports: UnifiedReport[]) => {
 // --- Timeline Item Card ---
 const TimelineItem: React.FC<{ 
     report: PrescriptionData; 
+    selected: boolean;
+    onToggleSelect: () => void;
     onSelect: () => void; 
     onDelete: () => void; 
     onDownload: () => void;
     onPreview: () => void;
     isDownloading: boolean;
-}> = ({ report, onSelect, onDelete, onDownload, onPreview, isDownloading }) => {
+}> = ({ report, selected, onToggleSelect, onSelect, onDelete, onDownload, onPreview, isDownloading }) => {
     const x = useMotionValue(0);
     const deleteOpacity = useTransform(x, [-100, -20], [1, 0]);
 
@@ -120,10 +132,16 @@ const TimelineItem: React.FC<{
                 onDragEnd={(_e, { offset }) => {
                     if (offset.x < -80) onDelete();
                 }}
-                className="relative bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 p-7 shadow-glass hover:shadow-2xl transition-all cursor-pointer z-10"
+                className={`relative bg-white dark:bg-zinc-900 border ${selected ? 'border-brand-blue ring-2 ring-brand-blue/10 bg-brand-blue/5' : 'border-slate-100 dark:border-white/5'} p-7 shadow-glass hover:shadow-2xl transition-all cursor-pointer z-10 flex items-center gap-6`}
                 onClick={onSelect}
             >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+                <Checkbox 
+                    checked={selected} 
+                    onChange={onToggleSelect} 
+                    className="shrink-0"
+                />
+
+                <div className="flex-1 flex flex-col sm:flex-row sm:items-start justify-between gap-6">
                     <div className="flex gap-6">
                         <div className={`size-16 shrink-0 rounded-2xl flex items-center justify-center shadow-inner border border-white/40 dark:border-transparent ${status.iconColor}`}>
                             <span className="material-symbols-outlined text-[32px]">
@@ -135,6 +153,7 @@ const TimelineItem: React.FC<{
                                 <h4 className="text-xl font-black text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors uppercase tracking-tight truncate">
                                     {report.patientName}
                                 </h4>
+                                <DraftIndicator status={report.sync?.status} />
                                 <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${status.color}`}>
                                     {status.text}
                                 </span>
@@ -185,8 +204,10 @@ const TimelineItem: React.FC<{
 
 const LabTimelineItem: React.FC<{
     report: BloodTestReport;
+    selected: boolean;
+    onToggleSelect: () => void;
     onDelete: () => void;
-}> = ({ report, onDelete }) => {
+}> = ({ report, selected, onToggleSelect, onDelete }) => {
     const x = useMotionValue(0);
     const deleteOpacity = useTransform(x, [-100, -20], [1, 0]);
 
@@ -219,9 +240,15 @@ const LabTimelineItem: React.FC<{
                 onDragEnd={(_e, { offset }) => {
                     if (offset.x < -80) onDelete();
                 }}
-                className="relative bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 p-7 shadow-glass hover:shadow-2xl transition-all cursor-pointer z-10"
+                className={`relative bg-white dark:bg-zinc-900 border ${selected ? 'border-brand-blue ring-2 ring-brand-blue/10 bg-brand-blue/5' : 'border-slate-100 dark:border-white/5'} p-7 shadow-glass hover:shadow-2xl transition-all cursor-pointer z-10 flex items-center gap-6`}
             >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+                <Checkbox 
+                    checked={selected} 
+                    onChange={onToggleSelect} 
+                    className="shrink-0"
+                />
+
+                <div className="flex-1 flex flex-col sm:flex-row sm:items-start justify-between gap-6">
                     <div className="flex gap-6">
                         <div className="size-16 shrink-0 rounded-2xl flex items-center justify-center shadow-inner border border-white/40 dark:border-transparent bg-purple-50 text-purple-500">
                             <span className="material-symbols-outlined text-[32px]">
@@ -233,6 +260,7 @@ const LabTimelineItem: React.FC<{
                                 <h4 className="text-xl font-black text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors uppercase tracking-tight truncate">
                                     {report.patientName}
                                 </h4>
+                                <DraftIndicator status={report.sync?.status} />
                                 <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm bg-purple-50 text-purple-600 border-purple-100">
                                     Blood Report
                                 </span>
@@ -269,27 +297,35 @@ const LabTimelineItem: React.FC<{
 
 // --- Main Page Component ---
 interface ReportsViewProps {
-    history: PrescriptionData[];
-    labHistory: BloodTestReport[];
-    isLoading: boolean;
-    onSelectPrescription: (report: PrescriptionData) => void;
-    onDeleteReport: (id: string) => void;
-    onDeleteLab: (id: string) => void;
     onNavigateToAnalyze: () => void;
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({ 
-    history, 
-    labHistory, 
-    isLoading, 
-    onSelectPrescription, 
-    onDeleteReport, 
-    onDeleteLab,
     onNavigateToAnalyze 
 }) => {
+    const { showToast } = useUI();
+    const { 
+        history, 
+        deleteFromHistory: onDeleteReport, 
+        setPrescriptionData: onSelectPrescription,
+        isLoadingHistory: isLoadingPrescriptions,
+    } = usePrescription();
+
+    const { 
+        labHistory, 
+        deleteLabFromHistory: onDeleteLab,
+        isLoading: isLoadingLabs
+    } = useLab();
+
+    const isLoading = isLoadingPrescriptions || isLoadingLabs;
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
+    const [dateRange, setDateRange] = useState('all');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+    const [viewMode, setViewMode] = useState<'timeline' | 'queue'>('timeline');
+    const [conflictItem, setConflictItem] = useState<UnifiedReport | null>(null);
 
     const unifiedHistory = useMemo(() => {
         const rxItems: UnifiedReport[] = history.map(h => ({ type: 'rx', data: h }));
@@ -302,20 +338,38 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     }, [history, labHistory]);
 
     const filteredHistory = useMemo(() => {
+        const now = new Date();
         return unifiedHistory.filter(item => {
-            const matchesSearch = 
-                item.data.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.data.id.toLowerCase().includes(searchQuery.toLowerCase());
+            const q = searchQuery.toLowerCase();
+            const itemDate = new Date(item.data.timestamp || item.data.date);
             
+            // Search filter
+            const matchesSearch = 
+                item.data.patientName.toLowerCase().includes(q) ||
+                item.data.id.toLowerCase().includes(q) ||
+                (item.type === 'rx' && (item.data as PrescriptionData).medication.some(m => m.name.toLowerCase().includes(q)));
+            
+            // Status/Type filter
             const matchesFilter = 
                 activeFilter === 'all' ||
                 (activeFilter === 'verified' && item.type === 'rx' && (item.data as PrescriptionData).status === 'Clinically-Verified') ||
                 (activeFilter === 'review' && item.type === 'rx' && (item.data as PrescriptionData).status !== 'Clinically-Verified') ||
                 (activeFilter === 'labs' && item.type === 'lab');
 
-            return matchesSearch && matchesFilter;
+            // Date Range filter
+            let matchesDate = true;
+            if (dateRange !== 'all') {
+                const diffTime = Math.abs(now.getTime() - itemDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (dateRange === '7d' && diffDays > 7) matchesDate = false;
+                if (dateRange === '30d' && diffDays > 30) matchesDate = false;
+                if (dateRange === '90d' && diffDays > 90) matchesDate = false;
+            }
+
+            return matchesSearch && matchesFilter && matchesDate;
         });
-    }, [unifiedHistory, searchQuery, activeFilter]);
+    }, [unifiedHistory, searchQuery, activeFilter, dateRange]);
 
     const groupedHistory = useMemo(() => groupReportsByDate(filteredHistory), [filteredHistory]);
     const groupKeys = useMemo(() => Object.keys(groupedHistory), [groupedHistory]);
@@ -330,10 +384,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     const stats = useMemo(() => ({
         total: unifiedHistory.length,
         needsReview: history.filter(h => h.status !== 'Clinically-Verified').length,
-        labs: labHistory.length
+        syncs: unifiedHistory.filter(h => h.data.sync?.status !== 'synced').length
     }), [history, labHistory, unifiedHistory]);
 
     const handleDownload = async (report: PrescriptionData) => {
+        if (report.sync?.status === 'conflict') {
+            setConflictItem({ type: 'rx', data: report });
+            return;
+        }
         setDownloadingId(report.id);
         try {
             await exportSinglePDF(report);
@@ -344,12 +402,93 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         }
     };
 
+    const handleBatchDownload = async () => {
+        if (selectedIds.size === 0) return;
+        setIsBatchProcessing(true);
+        try {
+            const zip = new JSZip();
+            const selectedReports = unifiedHistory.filter(h => selectedIds.has(h.data.id));
+            
+            for (const item of selectedReports) {
+                if (item.type === 'rx') {
+                    const blob = await getPDFBlob(item.data as PrescriptionData);
+                    zip.file(`${item.data.patientName}_Report_${item.data.id.slice(0, 6)}.pdf`, blob);
+                }
+            }
+
+            const content = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Clinical_Archive_Export_${new Date().toISOString().split('T')[0]}.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error("Batch export failed", e);
+        } finally {
+            setIsBatchProcessing(false);
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filteredHistory.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredHistory.map(h => h.data.id)));
+        }
+    };
+
     const handlePreview = async (report: PrescriptionData) => {
+        if (report.sync?.status === 'conflict') {
+            setConflictItem({ type: 'rx', data: report });
+            return;
+        }
         try {
             const url = await getPDFBlobUrl(report);
             window.open(url, '_blank');
         } catch (e) {
             console.error("Diagnostic preview failed", e);
+        }
+    };
+
+    const handleResolveConflict = async (resolution: 'local' | 'cloud' | 'merge') => {
+        if (!conflictItem) return;
+        
+        const { type, data } = conflictItem;
+        
+        try {
+            if (resolution === 'local') {
+                // Re-enqueue for sync, which will overwrite cloud
+                await syncService.syncManager.enqueue(type, 'update', {
+                    ...data,
+                    sync: { ...data.sync, status: 'pending', version: (data.sync?.version || 0) + 1 }
+                });
+            } else if (resolution === 'cloud') {
+                // Keep cloud: Overwrite local with cloud data
+                const cloudData = data.sync.conflictData.cloudData;
+                if (type === 'rx') {
+                    await localDB.saveToLocalDB({ ...cloudData, sync: { status: 'synced' } });
+                } else {
+                    await localDB.saveLabToLocalDB({ ...cloudData, sync: { status: 'synced' } });
+                }
+            } else {
+                // Merge: For now treated as keeping Local but we could add complex merge logic
+                showToast('Merge feature coming soon. Local version preserved.', 'info');
+            }
+            
+            showToast('Conflict resolved successfully.', 'success');
+            setConflictItem(null);
+        } catch (e: any) {
+            showToast(`Resolution failed: ${e.message}`, 'error');
         }
     };
 
@@ -413,7 +552,33 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
             <div className="flex justify-end mb-8">
-                <SyncStatusBar status="synced" lastSynced={new Date().toISOString()} />
+                <div className="bg-white dark:bg-zinc-900 p-1 rounded-2xl border border-slate-200 dark:border-white/10 flex items-center shadow-sm">
+                    <button 
+                        onClick={() => setViewMode('timeline')}
+                        className={cn(
+                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all",
+                            viewMode === 'timeline' ? "bg-brand-blue text-white shadow-lg shadow-brand-blue/20" : "text-slate-400 hover:text-slate-600"
+                        )}
+                    >
+                        <List className="size-3.5" />
+                        Timeline
+                    </button>
+                    <button 
+                        onClick={() => setViewMode('queue')}
+                        className={cn(
+                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all relative",
+                            viewMode === 'queue' ? "bg-brand-blue text-white shadow-lg shadow-brand-blue/20" : "text-slate-400 hover:text-slate-600"
+                        )}
+                    >
+                        <RefreshCw className={cn("size-3.5", stats.syncs > 0 && "animate-spin")} />
+                        Sync Queue
+                        {stats.syncs > 0 && (
+                            <span className="absolute -top-1 -right-1 size-4 bg-rose-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white dark:border-zinc-900">
+                                {stats.syncs}
+                            </span>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Official Branded Header */}
@@ -449,13 +614,21 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 options={filterOptions}
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
-                className="mb-16"
+                className={viewMode === 'queue' ? 'hidden' : 'mb-16'}
             />
 
-            {/* Bento Grid Dashboard */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
+            {viewMode === 'queue' ? (
+                <div className="max-w-3xl mx-auto">
+                    <SyncQueueView />
+                </div>
+            ) : (
+                <>
+                    {/* Bento Grid Dashboard */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
                 {/* Total Activity - Primary Bento Card */}
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }}
@@ -547,8 +720,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                                         {groupedHistory[key].map((item) => (
                                             item.type === 'rx' ? (
                                                 <TimelineItem 
-                                                    key={item.data.id}
+                                                    key={`rx-${item.data.id}`}
                                                     report={item.data as PrescriptionData}
+                                                    selected={selectedIds.has(item.data.id)}
+                                                    onToggleSelect={() => toggleSelect(item.data.id)}
                                                     onSelect={() => onSelectPrescription(item.data as PrescriptionData)}
                                                     onDelete={() => onDeleteReport(item.data.id)}
                                                     onDownload={() => handleDownload(item.data as PrescriptionData)}
@@ -557,8 +732,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                                                 />
                                             ) : (
                                                 <LabTimelineItem 
-                                                    key={item.data.id}
+                                                    key={`lab-${item.data.id}`}
                                                     report={item.data as BloodTestReport}
+                                                    selected={selectedIds.has(item.data.id)}
+                                                    onToggleSelect={() => toggleSelect(item.data.id)}
                                                     onDelete={() => onDeleteLab(item.data.id)}
                                                 />
                                             )
@@ -642,6 +819,60 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                     </div>
                 </aside>
             </div>
+            </>
+            )}
+
+            {/* Batch Action Bar */}
+            <AnimatePresence>
+                {conflictItem && (
+                    <ConflictResolutionModal 
+                        isOpen={true}
+                        localData={conflictItem.data}
+                        cloudData={conflictItem.data.sync?.conflictData?.cloudVersion}
+                        onResolve={handleResolveConflict}
+                        onClose={() => setConflictItem(null)}
+                    />
+                )}
+                {selectedIds.size > 0 && (
+                    <motion.div 
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-full max-w-2xl px-4"
+                    >
+                        <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] p-4 shadow-3xl flex items-center justify-between gap-6 backdrop-blur-xl">
+                            <div className="flex items-center gap-6 pl-4">
+                                <div className="size-10 rounded-full bg-brand-blue flex items-center justify-center text-white font-black text-sm shadow-glow ring-4 ring-brand-blue/20">
+                                    {selectedIds.size}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black text-white uppercase tracking-widest leading-none">Reports Selected</p>
+                                    <button onClick={toggleSelectAll} className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors mt-1 uppercase tracking-tight">
+                                        {selectedIds.size === filteredHistory.length ? 'Deselect All' : 'Select All'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setSelectedIds(new Set())}
+                                    className="px-6 py-4 rounded-2xl bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all text-[10px] font-black uppercase tracking-widest"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleBatchDownload}
+                                    disabled={isBatchProcessing}
+                                    className="px-8 py-4 rounded-2xl bg-brand-blue text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-brand-blue/20 hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-3 disabled:grayscale disabled:opacity-50"
+                                >
+                                    {isBatchProcessing ? <Spinner className="size-4" /> : <DownloadIcon className="size-4" />}
+                                    <span>Export Collection</span>
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

@@ -1,23 +1,21 @@
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Upload, FileText, AlertCircle, CheckCircle, TrendingUp, Download, Trash2, History, Undo2 } from 'lucide-react';
-import { BloodTestReport, LabResult } from '../types.ts';
-import { analyzeBloodReport } from '../services/bloodTestService.ts';
-import { generateBloodReportPdf } from '../lib/labPdfUtils.ts';
-import { cn } from '../lib/utils.ts';
-import { Spinner } from './Spinner.tsx';
+import { BloodTestReport, LabResult, useLab } from '@/features/blood-tests';
+import { usePrescription } from '@/features/prescriptions';
+import { analyzeBloodReport } from '@/features/blood-tests/services/bloodTestService.ts';
+import { generateBloodReportPdf } from '@/lib/labPdfUtils.ts';
+import { cn } from '@/lib/utils.ts';
+import { Spinner } from '@/components/Spinner.tsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
 
-interface LabsViewProps {
-  history: BloodTestReport[];
-  currentMeds: string[];
-  onSave: (report: BloodTestReport) => void;
-  onDelete: (id: string) => void;
-}
+export const LabsView: React.FC = () => {
+  const { labHistory: history, saveLabToHistory: onSave, deleteLabFromHistory: onDelete } = useLab();
+  const { history: rxHistory } = usePrescription();
 
-export const LabsView: React.FC<LabsViewProps> = ({ history, currentMeds, onSave, onDelete }) => {
+  const currentMeds = rxHistory.flatMap(p => p.medication.map(m => m.name));
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisStep, setAnalysisStep] = useState<number>(0); // 0: Idle, 1: OCR, 2: Mapping, 3: Review
   const [activeReport, setActiveReport] = useState<BloodTestReport | null>(null);
@@ -51,8 +49,9 @@ export const LabsView: React.FC<LabsViewProps> = ({ history, currentMeds, onSave
       setIsAnalyzing(false);
       setAnalysisStep(3); // Review
     } catch (error) {
-      console.error('Analysis failed');
-      toast.error('Failed to analyze report');
+      console.error('Analysis failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to analyze report';
+      toast.error(errorMessage);
       setIsAnalyzing(false);
       setAnalysisStep(0);
     }
@@ -154,7 +153,7 @@ export const LabsView: React.FC<LabsViewProps> = ({ history, currentMeds, onSave
               </div>
             ) : (
               history.map(report => (
-                <ReportCard key={report.id} report={report} onClick={() => setActiveReport(report)} onDelete={() => onDelete(report.id)} />
+                <ReportCard key={`lab-${report.id}`} report={report} onClick={() => setActiveReport(report)} onDelete={() => onDelete(report.id)} />
               ))
             )}
           </div>
