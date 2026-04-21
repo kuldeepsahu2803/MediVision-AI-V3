@@ -97,6 +97,16 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
                     </div>
                 </div>
 
+                <div className="px-8 pb-8 pt-0 flex flex-col md:flex-row gap-4">
+                    <button 
+                        onClick={() => onResolve('merge')}
+                        className="flex-1 py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-3xl font-black uppercase tracking-[0.2em] text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-2xl flex items-center justify-center gap-3"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                        Manual Review Required
+                    </button>
+                </div>
+
                 <div className="px-8 py-6 bg-slate-50 dark:bg-black/20 flex items-center justify-between">
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest max-w-sm">
                         Conflicts occur when the cloud version has been modified since your last sync.

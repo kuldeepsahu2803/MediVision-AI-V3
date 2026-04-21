@@ -135,11 +135,11 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
             transition={{ duration: 0.8 }}
             className="flex flex-col gap-10 text-center lg:text-left"
           >
-            <div className="flex flex-col items-center lg:items-start gap-4 mb-2">
+                <div className="flex flex-col items-center lg:items-start gap-4 mb-2">
               <div className="inline-flex items-center gap-3 bg-white/40 dark:bg-white/5 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/60 dark:border-white/10 shadow-sm w-fit">
                 <BrandLogo variant="header" className="h-6 origin-left" />
                 <span className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1"></span>
-                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Clinical Intelligence v2.5</span>
+                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Public Beta</span>
               </div>
             </div>
             <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black leading-[1] tracking-tight text-slate-900 dark:text-white">
@@ -152,9 +152,9 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5">
               <button 
                 onClick={onStart}
-                className="bg-emerald-500 text-white px-10 py-5 rounded-full text-lg font-black shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 hover:bg-emerald-600 transition-all flex items-center gap-3 animate-glimmer"
+                className="bg-emerald-600 dark:bg-emerald-500 text-white px-10 py-5 rounded-full text-lg font-black shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:bg-emerald-700 dark:hover:bg-emerald-400 hover:scale-105 transition-all flex items-center gap-3 animate-glimmer border-2 border-white/20"
               >
-                Enter Clinical Portal
+                Launch Application
                 <RocketIcon />
               </button>
               <button 
@@ -167,12 +167,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
             </div>
             
             <div className="flex items-center justify-center lg:justify-start gap-4 pt-4 text-sm text-slate-500 font-bold uppercase tracking-widest">
-                <div className="flex -space-x-3">
-                    {[1,2,3].map(i => (
-                        <img key={i} alt="Clinician" className="w-10 h-10 rounded-full border-4 border-white dark:border-slate-900" src={`https://i.pravatar.cc/100?img=${i+10}`} />
-                    ))}
-                </div>
-                <p>Trusted by 2,000+ clinicians</p>
+                <p>Operational workflow assistant for clinical environments</p>
             </div>
           </motion.div>
 
@@ -201,7 +196,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                       <div className="w-3.5 h-3.5 rounded-full bg-yellow-400"></div>
                       <div className="w-3.5 h-3.5 rounded-full bg-green-400"></div>
                     </div>
-                    <div className="text-xs font-black tracking-widest text-slate-400 uppercase">Analysis Cockpit v2.1</div>
+                    <div className="text-xs font-black tracking-widest text-slate-400 uppercase">Extraction Interface v2.1</div>
                     <div className="w-10"></div>
                   </div>
 
@@ -264,8 +259,8 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                    <CheckIcon />
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Safety Check</p>
-                   <p className="text-sm font-black text-slate-900 dark:text-white">Zero Interactions Found</p>
+                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Database Sync</p>
+                   <p className="text-sm font-black text-slate-900 dark:text-white">RxNorm Match Found</p>
                 </div>
               </div>
             </div>
@@ -292,9 +287,9 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
       <section id="platform" className="py-32 px-4 sm:px-8 relative scroll-mt-24">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Clinical-Grade Intelligence</h2>
+            <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Advanced Extraction Engine</h2>
             <p className="text-lg font-medium text-slate-600 dark:text-slate-400">
-              Advanced features designed for accuracy, safety, and compliance in a high-stakes medical environment.
+              Features designed for data precision and procedural safety in a clinical workflow environment.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -303,15 +298,15 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                 icon={<RocketIcon />} color="text-cyan-500" bg="bg-cyan-50 dark:bg-cyan-900/20" delay={0.1}
             />
             <FeatureCard 
-                title="Confidence Heatmap" desc="Visual confidence scores mapped directly to the original prescription ink."
+                title="Extraction Heatmap" desc="Visual verification of interpreted text blocks mapped directly to the original prescription ink."
                 icon={<PlayIcon />} color="text-rose-500" bg="bg-rose-50 dark:bg-rose-900/20" delay={0.2}
             />
             <FeatureCard 
-                title="Audit Trails" desc="Immutable, HIPAA-compliant logs of every clinical action and modification."
+                title="Audit Trails" desc="Secure, timestamped logs of every data modification and system action."
                 icon={<RocketIcon />} color="text-cyan-500" bg="bg-cyan-50 dark:bg-cyan-900/20" delay={0.3}
             />
             <FeatureCard 
-                title="Safety Checks" desc="Real-time drug interaction and dosage analysis warnings via RxNorm."
+                title="Safety Checks" desc="Database match validation and dosage analysis warnings via RxNorm integration."
                 icon={<PlayIcon />} color="text-rose-500" bg="bg-rose-50 dark:bg-rose-900/20" delay={0.4}
             />
           </div>
@@ -402,7 +397,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                  <BrandLogo variant="header" />
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-10 max-w-sm leading-relaxed">
-                Empowering clinical staff with pharmaceutical-grade artificial intelligence. Ensuring accuracy, safety, and speed in every medical interaction.
+                Empowering clinical staff with computer vision medical transcription. Ensuring accuracy and speed in every medical interaction.
               </p>
               <div className="flex gap-6">
                  {[1,2,3].map(i => <div key={i} onClick={handleComingSoon} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-400 hover:text-cyan-500 cursor-pointer transition-colors border border-slate-200 dark:border-slate-800" />)}
@@ -424,7 +419,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
                <div className="flex flex-col gap-4">
                     <button onClick={handleComingSoon} className="text-left text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors">Privacy Policy</button>
                     <button onClick={handleComingSoon} className="text-left text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors">Terms of Service</button>
-                    <button onClick={handleComingSoon} className="text-left text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors">HIPAA Compliance</button>
+                    <button onClick={handleComingSoon} className="text-left text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors">Security Roadmap</button>
                </div>
             </div>
           </div>
@@ -432,13 +427,8 @@ const LandingView: React.FC<LandingViewProps> = ({ onStart }) => {
           <div className="border-t border-slate-200 dark:border-slate-800 pt-12 flex flex-col md:flex-row justify-between items-center gap-6">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">© {new Date().getFullYear()} RxSnap. All rights reserved.</p>
             <div className="flex items-center gap-8">
-                <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
-                    <div className="w-5 h-5 bg-slate-800 dark:bg-white rounded" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">SOC2 Type II</span>
-                </div>
-                <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
-                    <div className="w-5 h-5 bg-slate-800 dark:bg-white rounded" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">HIPAA Ready</span>
+                <div className="flex items-center gap-2 opacity-50 cursor-default">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Encrypted in transit and at rest</span>
                 </div>
             </div>
           </div>

@@ -210,9 +210,9 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
     ];
     
     const faqs = [
-        { q: "How accurate is the analysis?", a: "RxSnap achieves 99.8% extraction accuracy, but human review is mandatory for all clinical decisions." },
+        { q: "How accurate is the analysis?", a: "RxSnap uses advanced LLM extraction. However, clinical patterns can be complex; human review is mandatory for all clinical decisions before finalizing a report." },
         { q: "Is my data secure?", a: "Images are processed securely. Guests store data on device (IndexedDB); Professionals store encrypted data in Supabase Cloud." },
-        { q: "What do the badge colors mean?", a: "Green means a definitive RxNorm match. Yellow suggests spelling review. Red indicates a strength mismatch for the ingredient." }
+        { q: "What do the badge colors mean?", a: "Badges indicate extraction verification status. Green suggests a standardized match. Yellow or Red flags require careful clinical validation of strength or name." }
     ];
 
     const MenuButton = ({ icon: Icon, label, onClick }: { icon: React.FC<any>, label: string, onClick: () => void }) => (

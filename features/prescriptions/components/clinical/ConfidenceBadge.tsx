@@ -33,22 +33,22 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
     HIGH: {
       color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30',
       icon: ShieldCheck,
-      label: 'High Confidence'
+      label: 'Database Match (95%+)'
     },
     MEDIUM: {
       color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border-amber-100 dark:border-amber-900/30',
       icon: ShieldAlert,
-      label: 'Medium Confidence'
+      label: 'Manual Review (70%+)'
     },
     LOW: {
       color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border-rose-100 dark:border-rose-900/30',
       icon: ShieldQuestion,
-      label: 'Low Confidence'
+      label: 'Low Match Score'
     },
     UNKNOWN: {
       color: 'bg-slate-50 text-slate-700 dark:bg-slate-950/30 dark:text-slate-400 border-slate-100 dark:border-slate-900/30',
       icon: Info,
-      label: 'Unknown Confidence'
+      label: 'No Match Data'
     }
   };
 
@@ -62,9 +62,6 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
     )}>
       {showIcon && <Icon className="size-3" />}
       {showLabel && <span>{label}</span>}
-      {confidence !== undefined && (
-        <span className="opacity-60 ml-1">{Math.round(confidence * 100)}%</span>
-      )}
     </div>
   );
 };

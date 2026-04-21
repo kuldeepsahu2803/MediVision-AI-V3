@@ -130,9 +130,9 @@ export const verifyMedication = async (med: Medicine, imageBase64?: string): Pro
 };
 
 /**
- * Concurrency Limiter Helper
+ * Concurrency Limiter Helper with Staggering
  */
-const limitConcurrency = (tasks: (() => Promise<any>)[], limit: number) => {
+const limitConcurrency = (tasks: (() => Promise<any>)[], limit: number, staggerMs = 300) => {
     const results: any[] = [];
     const executing: Promise<any>[] = [];
     
@@ -141,7 +141,16 @@ const limitConcurrency = (tasks: (() => Promise<any>)[], limit: number) => {
         if (i === tasks.length) return Promise.resolve();
         
         const taskIndex = i++;
-        const p = tasks[taskIndex]().then(result => {
+        
+        // Add staggering delay before starting a new task
+        const taskWithDelay = async () => {
+            if (taskIndex > 0) {
+                await new Promise(r => setTimeout(r, staggerMs));
+            }
+            return tasks[taskIndex]();
+        };
+
+        const p = taskWithDelay().then(result => {
             results[taskIndex] = result;
         });
         
@@ -175,6 +184,7 @@ export const verifyPrescriptionMeds = async (medications: Medicine[], imageBase6
         };
     });
 
-    const results = await limitConcurrency(tasks, 5);
+    // Lower limit to 2 concurrent requests with 300ms stagger
+    const results = await limitConcurrency(tasks, 2, 300);
     return results;
 };

@@ -42,7 +42,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Patient Identity</h3>
             <Badge variant={getConfidenceVariant(patientNameConfidence)} size="xs">
-              {patientNameConfidence ? `${Math.round(patientNameConfidence * 100)}% Match` : 'Unverified'}
+              {patientNameConfidence ? 'AI Detected' : 'Unverified'}
             </Badge>
           </div>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">{patientName || 'Unknown Patient'}</h2>
@@ -54,7 +54,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           <div className="flex items-center justify-between">
             <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Prescription Date</label>
             <Badge variant={getConfidenceVariant(dateConfidence)} size="xs">
-              {dateConfidence ? `${Math.round(dateConfidence * 100)}%` : 'Manual'}
+              {dateConfidence ? 'AI Detected' : 'Manual'}
             </Badge>
           </div>
           <div className="flex items-center gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
@@ -67,7 +67,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           <div className="flex items-center justify-between">
             <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Prescriber</label>
             <Badge variant={getConfidenceVariant(doctorNameConfidence)} size="xs">
-              {doctorNameConfidence ? `${Math.round(doctorNameConfidence * 100)}%` : 'Manual'}
+              {doctorNameConfidence ? 'AI Detected' : 'Manual'}
             </Badge>
           </div>
           <div className="flex items-center gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">

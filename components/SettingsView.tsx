@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useHaptic } from '../hooks/useHaptic.ts';
+import { useUI } from '../context/UIContext.tsx';
 import { StethoscopeIcon } from './icons/StethoscopeIcon.tsx';
 import { LockClosedIcon } from './icons/LockClosedIcon.tsx';
 import { FolderIcon } from './icons/FolderIcon.tsx';
@@ -13,6 +14,7 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
+    const { userRole } = useUI();
     const { triggerHaptic } = useHaptic();
     const [searchQuery, setSearchQuery] = useState('');
     const [darkMode, setDarkMode] = useState(false);
@@ -21,16 +23,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
 
     const [activeModule, setActiveModule] = useState<string | null>(null);
 
-    const cards = [
-        { id: 'profile', title: 'Profile & Clinic', desc: 'Manage practice locations and clinical identity details.', icon: <StethoscopeIcon className="size-8" />, color: 'brand-green' },
-        { id: 'security', title: 'Security & Audit', desc: 'High-precision access logs and role permissions.', icon: <LockClosedIcon className="size-8" />, color: 'brand-blue' },
+    const allCards = [
+        { id: 'profile', title: 'Profile & Clinic', desc: 'Manage practice locations and clinical identity details.', icon: <StethoscopeIcon className="size-8" />, color: 'brand-green', professional: true },
+        { id: 'security', title: 'Security & Audit', desc: 'High-precision access logs and role permissions.', icon: <LockClosedIcon className="size-8" />, color: 'brand-blue', professional: true },
         { id: 'engine', title: 'Clinical Engine', desc: 'RxNorm/FDA real-time database synchronization.', icon: <FolderIcon className="size-8" />, color: 'brand-green' },
         { id: 'accessibility', title: 'Accessibility', desc: 'Dynamic text scaling and high-contrast visual modes.', icon: <span className="material-symbols-outlined text-3xl">accessibility_new</span>, color: 'brand-blue' },
-        { id: 'multilingual', title: 'Multilingual Support', desc: 'Configure precision translation for sig instructions.', icon: <span className="material-symbols-outlined text-3xl">translate</span>, color: 'brand-blue' },
-        { id: 'education', title: 'Patient Education', desc: 'Customize informational materials and guides.', icon: <span className="material-symbols-outlined text-3xl">menu_book</span>, color: 'brand-green' },
-        { id: 'notifications', title: 'Notifications', desc: 'Alert thresholds for clinical contradictions.', icon: <span className="material-symbols-outlined text-3xl">notifications_active</span>, color: 'brand-blue' },
-        { id: 'integrations', title: 'Integrations', desc: 'Connect EHR and external lab API systems.', icon: <span className="material-symbols-outlined text-3xl">hub</span>, color: 'brand-blue', beta: true },
+        { id: 'multilingual', title: 'Multilingual Support', desc: 'Configure precision translation for sig instructions.', icon: <span className="material-symbols-outlined text-3xl">translate</span>, color: 'brand-blue', professional: true },
+        { id: 'education', title: 'Patient Education', desc: 'Customize informational materials and guides.', icon: <span className="material-symbols-outlined text-3xl">menu_book</span>, color: 'brand-green', professional: true },
+        { id: 'notifications', title: 'Notifications', desc: 'Alert thresholds for clinical contradictions.', icon: <span className="material-symbols-outlined text-3xl">notifications_active</span>, color: 'brand-blue', professional: true },
+        { id: 'integrations', title: 'Integrations', desc: 'Connect EHR and external lab API systems.', icon: <span className="material-symbols-outlined text-3xl">hub</span>, color: 'brand-blue', beta: true, professional: true },
     ];
+
+    const cards = useMemo(() => {
+        if (userRole === 'guest') {
+            return allCards.filter(c => !c.professional);
+        }
+        return allCards;
+    }, [userRole, allCards]);
 
     const handleApplyChanges = () => {
         triggerHaptic('success');

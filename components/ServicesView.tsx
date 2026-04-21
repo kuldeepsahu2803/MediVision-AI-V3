@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BrandLogo from './BrandLogo.tsx';
 
 const NotifyModal = ({ serviceName, onClose }: { serviceName: string, onClose: () => void }) => {
     const [email, setEmail] = useState('');
@@ -28,7 +29,7 @@ const NotifyModal = ({ serviceName, onClose }: { serviceName: string, onClose: (
                         </div>
                         <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">{serviceName}</h3>
                         <p className="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed">
-                            This clinical module is currently in private beta training. Join our medical waitlist to get early access when we go live.
+                            This module is currently in private beta training. Join our waitlist to get early access when we go live.
                         </p>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="relative">
@@ -58,7 +59,7 @@ const NotifyModal = ({ serviceName, onClose }: { serviceName: string, onClose: (
                         </motion.div>
                         <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Registration Successful</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
-                            We've added your clinical profile to the queue. You'll receive an invitation once {serviceName} is ready for verification.
+                            We've added your profile to the queue. You'll receive an invitation once {serviceName} is ready for use.
                         </p>
                     </div>
                 )}
@@ -122,7 +123,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({ onSelectService, onB
       id: 'rx', 
       title: 'Handwritten Prescription', 
       icon: 'description', 
-      desc: 'Transcribe and verify handwritten medical documents using clinical-grade vision AI.', 
+      desc: 'Transcribe and verify handwritten medical documents using our computer vision extraction engine.', 
       active: true 
     },
     { 
@@ -174,12 +175,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({ onSelectService, onB
 
       {/* Persistent Navigation Header */}
       <header className="flex items-center justify-between px-8 py-5 border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-black/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>medical_services</span>
-          </div>
-          <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">RxSnap</h1>
-        </div>
+        <BrandLogo variant="header" />
         <div className="flex items-center gap-3">
             <button 
                 onClick={onBack} 
@@ -205,7 +201,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({ onSelectService, onB
                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 w-fit mx-auto md:mx-0"
             >
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Clinical Service Selection</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Service Selection</span>
             </motion.div>
             <h2 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tighter leading-[0.95]">
                 Select an <br/>
@@ -220,7 +216,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({ onSelectService, onB
             onClick={() => onSelectService('rx')}
             className="hidden md:flex items-center gap-3 bg-slate-900 dark:bg-white text-white dark:text-black px-10 py-5 rounded-full font-black text-sm shadow-2xl hover:scale-105 transition-all group active:scale-95"
           >
-            <span>Clinical Dashboard</span>
+            <span>Processing Dashboard</span>
             <span className="material-symbols-outlined text-xl group-hover:rotate-12 transition-transform">dashboard</span>
           </button>
         </div>
@@ -310,16 +306,11 @@ export const ServicesView: React.FC<ServicesViewProps> = ({ onSelectService, onB
       {/* Footer Metadata */}
       <footer className="w-full max-w-7xl mx-auto px-8 py-10 border-t border-slate-200 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-            RxSnap Systems • Professional Clinical Tier
+            RxSnap Systems • Application Version 2.1
          </p>
          <div className="flex gap-8 items-center grayscale opacity-40">
             <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-slate-400 rounded-md" />
-                <span className="text-[9px] font-black uppercase tracking-widest">ISO 27001</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-slate-400 rounded-md" />
-                <span className="text-[9px] font-black uppercase tracking-widest">HIPAA Ready</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Build: {new Date().toISOString().split('T')[0]}</span>
             </div>
          </div>
       </footer>

@@ -103,6 +103,40 @@ const extractJson = (text: string) => {
   }
 };
 
+/**
+ * Standardizes error messages from the Gemini API, specifically handling quota limits.
+ */
+const handleGeminiError = (e: any, defaultMsg: string): never => {
+  console.error("Gemini API Error Details:", e);
+  const errorStr = String(e.message || "");
+  if (errorStr.includes("429") || errorStr.includes("RESOURCE_EXHAUSTED") || e.status === 429) {
+    throw new Error("System Quota Exceeded: The clinical analysis engine is currently under high load. Please wait a moment and try again.");
+  }
+  throw new Error(e.message || defaultMsg, { cause: e });
+};
+
+/**
+ * Retry helper for API calls with exponential backoff
+ */
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, delay = 1000): Promise<T> {
+  let lastError: any;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      lastError = e;
+      const errorStr = String(e.message || "");
+      if (errorStr.includes("429") || errorStr.includes("RESOURCE_EXHAUSTED") || e.status === 429) {
+        console.warn(`Quota hit. Retrying in ${delay * (i + 1)}ms... (Attempt ${i + 1}/${maxRetries})`);
+        await new Promise(r => setTimeout(r, delay * (i + 1)));
+        continue;
+      }
+      throw e; // Non-quota error, don't retry
+    }
+  }
+  throw lastError;
+}
+
 export const analyzePrescription = async (images: { base64Data: string; mimeType: string }[]): Promise<Omit<PrescriptionData, 'id' | 'status'>> => {
   try {
     const ai = getAi();
@@ -134,7 +168,7 @@ export const analyzePrescription = async (images: { base64Data: string; mimeType
       - Output strictly valid JSON matching the schema.`
     };
 
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3.1-pro-preview',
       contents: { parts: [...imageParts, textPart] },
       config: {
@@ -142,7 +176,7 @@ export const analyzePrescription = async (images: { base64Data: string; mimeType
         responseSchema: prescriptionSchema,
         maxOutputTokens: 4096
       },
-    });
+    }));
 
     const contentText = response.text;
     if (!contentText) {
@@ -170,17 +204,21 @@ export const analyzePrescription = async (images: { base64Data: string; mimeType
     
     throw new Error("Validation Error: Parsed data does not match the clinical schema.");
   } catch (e: any) {
-    console.error("Analysis Pipeline Failed:", e);
-    throw new Error(e.message || "The clinical vision engine failed to process the request.", { cause: e });
+    handleGeminiError(e, "The clinical vision engine failed to process the request.");
   }
 };
 
 export const reReadHandwriting = async (imageBase64: string, coordinates: number[]): Promise<string> => {
+  if (!imageBase64 || !coordinates || coordinates.length < 4) {
+    console.warn("Clinical Log: Skipping refinement - insufficient visual coordinate data.");
+    return "Illegible / Confidence Too Low";
+  }
+
   try {
     const ai = getAi();
     const [ymin, xmin, ymax, xmax] = coordinates;
     
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3.1-pro-preview',
       contents: {
         parts: [
@@ -188,12 +226,16 @@ export const reReadHandwriting = async (imageBase64: string, coordinates: number
           { text: `Precisely transcribe the ink within the specific region: y:[${ymin}, ${ymax}], x:[${xmin}, ${xmax}]. Focus only on medication data. If the ink is completely illegible, return "Illegible".` }
         ]
       }
-    });
+    }));
 
     return response.text?.trim() || "Illegible / Confidence Too Low";
-  } catch {
-    console.error("Secure re-read failed");
-    return "Audit Service Unavailable";
+  } catch (error: any) {
+    const errorStr = String(error.message || "");
+    if (errorStr.includes("429") || errorStr.includes("RESOURCE_EXHAUSTED")) {
+        return "Refinement Exhausted (Quota)";
+    }
+    console.warn("Clinical Log: Secondary extraction refinement bypassed.", error);
+    return "Refinement Unavailable";
   }
 };
 
@@ -203,10 +245,10 @@ export const translateContent = async (text: string, targetLanguage: string): Pr
         const ai = getAi();
         const prompt = `Translate the following medical text to ${targetLanguage}: "${text}". Return only the translated text.`;
         
-        const response = await ai.models.generateContent({
+        const response = await withRetry(() => ai.models.generateContent({
           model: "gemini-3-flash-preview",
           contents: prompt
-        });
+        }));
 
         return response.text || text;
     } catch {
@@ -217,14 +259,14 @@ export const translateContent = async (text: string, targetLanguage: string): Pr
 export const getTreatmentSuggestions = async (prescription: PrescriptionData): Promise<AiSuggestions> => {
     try {
       const ai = getAi();
-      const response = await ai.models.generateContent({
+      const response = await withRetry(() => ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
         contents: `Review this regimen for risks or guidance: ${JSON.stringify(prescription.medication)}. Return JSON findings.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: suggestionsSchema,
         },
-      });
+      }));
 
       return extractJson(response.text || '{}') as AiSuggestions;
     } catch {
@@ -253,7 +295,6 @@ export const getDrugReferenceInfo = async (drugName: string): Promise<DrugRefere
 
     return extractJson(response.text || '{}') as DrugReference;
   } catch (e) {
-    console.error("Failed to fetch drug reference info:", e);
-    throw e;
+    handleGeminiError(e, "Failed to fetch drug reference info.");
   }
 };

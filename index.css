@@ -62,9 +62,25 @@
 }
 
 .animate-glimmer {
-  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
-  background-size: 200% 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-glimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -200%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 70%
+  );
   animation: glimmer 3s infinite linear;
+  pointer-events: none;
 }
 
 .animate-scan {

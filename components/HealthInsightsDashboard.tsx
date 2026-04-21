@@ -31,7 +31,7 @@ interface ClinicalDashboardProps {
   isLoading?: boolean;
 }
 
-export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({ 
+export const HealthInsightsDashboard: React.FC<HealthInsightsDashboardProps> = ({ 
   insight, 
   onDismissAlert, 
   onTriggerAnalysis,
@@ -40,15 +40,15 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
   if (!insight) {
     return (
       <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-xl">
-        <Stethoscope className="size-12 text-slate-300 mx-auto mb-4" />
-        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">No Clinical Insights Yet</h2>
-        <p className="text-slate-500 font-medium mb-6">Upload lab reports and prescriptions to generate clinical intelligence.</p>
+        <Activity className="size-12 text-slate-300 mx-auto mb-4" />
+        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">No Data Insights Yet</h2>
+        <p className="text-slate-500 font-medium mb-6">Upload reports and documents to generate system insights.</p>
         <button 
           onClick={onTriggerAnalysis}
           disabled={isLoading}
           className="px-8 py-3 bg-brand-blue text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-lg shadow-brand-blue/20 disabled:opacity-50"
         >
-          {isLoading ? 'Analyzing...' : 'Run Clinical Analysis'}
+          {isLoading ? 'Analyzing...' : 'Run Data Analysis'}
         </button>
       </div>
     );
@@ -72,10 +72,10 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
               <ShieldAlert className="size-10" />
             </div>
             <div className="flex-grow">
-              <h2 className="text-xl font-black uppercase tracking-tight">Emergency Alert Detected</h2>
+              <h2 className="text-xl font-black uppercase tracking-tight">Critical Pattern Detected</h2>
               <p className="font-bold opacity-90">{emergencyAlerts[0].message}</p>
               <p className="text-sm font-black uppercase tracking-widest mt-2 bg-white/20 inline-block px-3 py-1 rounded-lg">
-                Action: {emergencyAlerts[0].action}
+                Suggested Step: {emergencyAlerts[0].action}
               </p>
             </div>
             <Zap className="size-12 opacity-20 shrink-0" />
@@ -86,8 +86,8 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
       {/* Intelligence Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-100 dark:border-white/5">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Clinical Intelligence <span className="text-brand-blue">Dashboard</span></h1>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">Cross-referencing {insight.alerts.length} conflict rules against history</p>
+          <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Health Data <span className="text-brand-blue">Insights</span></h1>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">Cross-referencing {insight.alerts.length} data patterns against history</p>
         </div>
         <div className="flex items-center gap-3">
           <SyncStatus date={insight.generatedAt} />
@@ -109,8 +109,8 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
           {/* Risk Score Hub */}
           <section>
              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Biological Vitality Systems</h2>
-                <span className="px-3 py-1 bg-brand-blue/5 text-brand-blue text-[9px] font-black uppercase tracking-widest rounded-full border border-brand-blue/10">Real-time Risk Mapping</span>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Biomarker Trend Indicators</h2>
+                <span className="px-3 py-1 bg-brand-blue/5 text-brand-blue text-[9px] font-black uppercase tracking-widest rounded-full border border-brand-blue/10">AI-Generated Reference</span>
              </div>
              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <RiskCard label="Kidney" score={insight.riskScores.kidney} icon={<Droplets className="size-5" />} />
@@ -124,7 +124,7 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
           {/* Biomarker Trends Grid */}
           <section>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Clinical Marker Longitudinal Tracking</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Marker Trend Tracking</h2>
               <TrendingUp className="size-4 text-emerald-500" />
             </div>
             
@@ -150,8 +150,8 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
                   <Activity className="size-6" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black tracking-tight">Intelligence Pattern Recognition</h3>
-                  <p className="text-brand-blue text-[10px] font-black uppercase tracking-widest">Cross-system Correlation Evidence</p>
+                  <h3 className="text-2xl font-black tracking-tight">System Data Pattern Recognition</h3>
+                  <p className="text-brand-blue text-[10px] font-black uppercase tracking-widest">Cross-system Data Correlation</p>
                 </div>
               </div>
 
@@ -170,15 +170,6 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
                     </div>
                   ))
                 )}
-                {/* Simulated ML Insights */}
-                <div className="p-5 rounded-2xl bg-brand-blue/10 border border-brand-blue/20 flex items-center gap-4">
-                  <div className="size-8 rounded-full bg-brand-blue/20 text-brand-blue flex items-center justify-center">
-                    <Info className="size-4" />
-                  </div>
-                  <p className="text-xs font-bold text-slate-200 italic">
-                    AI Observation: Medication adherence patterns suggest optimal response during evening intervals.
-                  </p>
-                </div>
               </div>
             </div>
             
@@ -215,22 +206,22 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
           <section className="p-8 bg-brand-blue text-white rounded-[3rem] shadow-xl shadow-brand-blue/20 h-fit lg:sticky lg:top-24">
              <div className="flex items-center gap-2 mb-6">
                 <Info className="size-5" />
-                <h3 className="font-black uppercase tracking-tighter text-lg">AI Clinical Synthesis</h3>
+                <h3 className="font-black uppercase tracking-tighter text-lg">System Data Synthesis</h3>
              </div>
              <p className="text-sm font-bold leading-relaxed opacity-90 mb-8 border-l-2 border-white/20 pl-4 py-2">
                 {insight.summary}
              </p>
              <div className="space-y-3 pt-6 border-t border-white/10">
                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
-                   <span>Safety Protocol</span>
+                   <span>Status Protocol</span>
                    <span className="text-emerald-400">Active</span>
                 </div>
                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
-                   <span>DDI Scan</span>
+                   <span>Conflict Scan</span>
                    <span className="text-emerald-400">Complete</span>
                 </div>
                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
-                   <span>Audit Log</span>
+                   <span>Data Log</span>
                    <span className="text-emerald-400">Secure</span>
                 </div>
              </div>
@@ -289,7 +280,7 @@ const SyncStatus = ({ date }: { date: string }) => (
   <div className="px-4 py-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20 flex items-center gap-2">
     <div className="size-2 rounded-full bg-emerald-500 animate-pulse" />
     <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
-      Analysis Active: {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      Latest Sync: {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
     </span>
   </div>
 );
@@ -310,7 +301,7 @@ const RiskCard: React.FC<{ label: string; score: number; icon: React.ReactNode }
         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{label}</p>
         <div className="flex items-end gap-1">
           <span className="text-xl font-black text-slate-900 dark:text-white">{score}</span>
-          <span className="text-[10px] text-slate-400 font-bold mb-1">%</span>
+          <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter mb-1">Risk</span>
         </div>
       </div>
       <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">

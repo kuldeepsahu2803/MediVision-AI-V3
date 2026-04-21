@@ -120,10 +120,10 @@ const CameraScanner = ({ onCapture, onClose }: { onCapture: (file: File) => void
           <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-3xl" />
           <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-3xl" />
           <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-3xl" />
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_20px_rgba(13,215,242,0.8)] animate-scan" />
+          <div className="absolute top-0 left-0 right-0 h-1" />
         </div>
         <div className="mt-8 px-8 py-3 bg-black/80 backdrop-blur-xl rounded-full border border-white/20 shadow-2xl">
-          <p className="text-white font-black text-[11px] uppercase tracking-[0.25em] animate-pulse">Align prescription in frame</p>
+          <p className="text-white font-black text-[11px] uppercase tracking-[0.25em]">Align prescription in frame</p>
         </div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 p-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between px-16 z-20">
@@ -156,7 +156,6 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => (
       onClick={e => e.stopPropagation()}
       className="bg-white dark:bg-zinc-900 p-8 rounded-[3rem] shadow-2xl max-w-lg w-full border border-slate-200 dark:border-white/20 overflow-hidden relative"
     >
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-secondary to-primary animate-neural"></div>
       <div className="flex justify-between items-start mb-6">
         <div className="size-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
           <span className="material-symbols-outlined text-3xl">menu_book</span>
@@ -261,14 +260,14 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
         <div className="space-y-5">
             <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 bg-white/50 dark:bg-white/5 px-5 py-2 rounded-full border border-slate-100 dark:border-white/5 w-fit shadow-sm backdrop-blur-md">
                 <AnalyzeIcon className="size-3.5" />
-                <span>AI Core v2.1</span>
+                <span>Extraction Engine v2.1</span>
                 <span className="size-1 rounded-full bg-slate-300"></span>
-                <span>Active Extraction</span>
+                <span>Active Scanner</span>
                 <span className="size-1 rounded-full bg-slate-300"></span>
                 <span className="text-brand-blue">Queue Ready</span>
             </div>
             <h1 className="font-display text-5xl sm:text-7xl font-black tracking-tighter text-slate-900 dark:text-white">Scan & <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Analyze</span></h1>
-            <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl font-medium leading-relaxed">Transform handwritten clinical records into structured digital data using proprietary Vision AI logic.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl font-medium leading-relaxed">Transform handwritten documents into structured digital data using large language model extraction.</p>
         </div>
         <div className="flex items-center gap-4">
             <button onClick={() => { triggerHaptic('light'); setShowHelp(true); }} className="flex items-center gap-2.5 px-8 py-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95"><span className="material-symbols-outlined text-[18px]">help</span> Help Guide</button>
@@ -329,7 +328,36 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({
                     <div className="flex items-center justify-between mb-6"><h3 className="font-black text-xl text-slate-900 dark:text-white tracking-tight">Recent Analysis</h3><button onClick={onViewAll} className="text-primary text-xs font-black uppercase tracking-widest hover:underline">View All</button></div>
                     <div className="flex-1 overflow-y-auto pr-2 space-y-4 no-scrollbar">
                       {recentHistory.length > 0 ? recentHistory.map((item, i) => (
-                          <m.div key={`rx-${item.id}`} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} onClick={() => { triggerHaptic('light'); onSelectHistory(item); }} className="group flex items-center gap-5 p-4 rounded-3xl bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-zinc-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-white/20 cursor-pointer shadow-sm hover:shadow-md"><div className="size-16 rounded-2xl bg-slate-100 dark:bg-zinc-800 overflow-hidden shrink-0 border border-slate-200 dark:border-white/5">{item.imageUrls && item.imageUrls[0] ? <img src={item.imageUrls[0]} alt="Rx" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><span className="material-symbols-outlined text-3xl">description</span></div>}</div><div className="flex-1 min-w-0"><h5 className="text-sm font-black text-slate-900 dark:text-white truncate uppercase tracking-tight">{item.patientName || 'Untitled Prescription'}</h5><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Verified: {formatDate(item.date)}</p></div><span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-900/30">Verified</span></m.div>
+                          <m.div 
+                            key={`rx-${item.id}`} 
+                            initial={{ opacity: 0, x: 10 }} 
+                            animate={{ opacity: 1, x: 0 }} 
+                            transition={{ delay: i * 0.1 }} 
+                            onClick={() => { triggerHaptic('light'); onSelectHistory(item); }} 
+                            className="group flex items-center gap-5 p-4 rounded-3xl bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-zinc-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-white/20 cursor-pointer shadow-sm hover:shadow-md"
+                          >
+                            <div className="size-16 rounded-2xl bg-slate-100 dark:bg-zinc-800 overflow-hidden shrink-0 border border-slate-200 dark:border-white/5">
+                              {item.imageUrls && item.imageUrls[0] ? (
+                                <img 
+                                  src={item.imageUrls[0]} 
+                                  alt="Rx" 
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/rx/100/100';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                  <span className="material-symbols-outlined text-3xl">description</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h5 className="text-sm font-black text-slate-900 dark:text-white truncate uppercase tracking-tight">{item.patientName || 'Untitled Prescription'}</h5>
+                              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Verified: {formatDate(item.date)}</p>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-900/30">Verified</span>
+                          </m.div>
                         )) : (
                           <div className="flex-1 flex flex-col items-center justify-center py-12 px-6 text-center bg-slate-50/50 dark:bg-white/5 rounded-[2rem] border border-dashed border-slate-200 dark:border-white/10">
                             <div className="size-16 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 mb-4">

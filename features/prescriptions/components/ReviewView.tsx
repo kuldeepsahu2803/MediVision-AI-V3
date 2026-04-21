@@ -199,7 +199,7 @@ const ResolutionModal: React.FC<{
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <div className="size-6 rounded-md bg-slate-100 dark:bg-white/10 flex items-center justify-center text-[10px] font-black text-slate-400 mr-2 border border-slate-200 dark:border-white/10">{i + 1}</div>
-                                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">{c.score}% Match</span>
+                                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">AI Suggestion</span>
                                     <span className="material-symbols-outlined text-slate-300 group-hover:text-brand-blue transition-colors">chevron_right</span>
                                 </div>
                             </motion.button>
@@ -237,11 +237,11 @@ const ResolutionModal: React.FC<{
 const ConfidenceIndicator: React.FC<{ confidence?: number }> = ({ confidence }) => {
     if (confidence === undefined) return null;
     const variant = confidence > 0.85 ? 'success' : confidence > 0.6 ? 'warning' : 'error';
-    const label = confidence > 0.85 ? 'High' : confidence > 0.6 ? 'Medium' : 'Low';
+    const label = confidence > 0.85 ? 'Verified Map' : confidence > 0.6 ? 'Manual Review' : 'Ambiguous';
     
     return (
         <Badge variant={variant} size="xs" className="ml-3 shrink-0">
-            {label} ({Math.round(confidence * 100)}%)
+            {label}
         </Badge>
     );
 };

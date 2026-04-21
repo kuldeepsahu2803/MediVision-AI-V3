@@ -108,7 +108,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ data, isLoading,
       <div className="relative h-full">
         <PrescriptionSkeleton />
         <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[2rem]">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-blue to-transparent shadow-[0_0_20px_rgba(0,102,255,0.8)] animate-scan" />
           <div className="absolute inset-0 bg-brand-blue/5 animate-pulse-ai" />
         </div>
       </div>
@@ -142,6 +141,15 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ data, isLoading,
     
     return (
       <div className="flex flex-col h-full animate-fadeIn p-6">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="flex-1 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+             <span className="material-symbols-outlined text-amber-500 text-lg shrink-0">warning</span>
+             <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 leading-tight">
+               <span className="font-black uppercase">Unverified AI Extraction:</span> All values must be cross-referenced with the physical prescription before clinical verification.
+             </p>
+          </div>
+        </div>
+
         <div className="flex items-center gap-4 mb-8">
           <div className="size-12 rounded-2xl bg-brand-green/10 flex items-center justify-center text-brand-green border border-brand-green/20">
             <PillIcon className="w-6 h-6" />

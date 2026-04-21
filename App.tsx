@@ -4,7 +4,7 @@ import { AnalyzeView, ReviewView, TreatmentsView, PrescriptionProvider, usePresc
 import { LabsView, LabProvider, useLab } from '@/features/blood-tests';
 import { ReportsView } from '@/components/ReportsView.tsx';
 import { SettingsView } from '@/components/SettingsView.tsx';
-import { ClinicalDashboard } from '@/components/ClinicalDashboard.tsx';
+import { HealthInsightsDashboard } from '@/components/HealthInsightsDashboard.tsx';
 import { LoginModal } from '@/components/LoginModal.tsx';
 import { Toast } from '@/components/Toast.tsx';
 import { Spinner } from '@/components/Spinner.tsx';
@@ -100,6 +100,41 @@ const AppContent: React.FC = () => {
   };
   
   const renderContent = () => {
+    // Role-based view protection
+    const isGuest = userRole === 'guest';
+    
+    if (isGuest) {
+        const cloudTabs = [AppTab.DASHBOARD, AppTab.REVIEW, AppTab.TREATMENTS];
+        if (cloudTabs.includes(activeTab)) {
+            // Silently redirect to Analyze for Guests trying to access cloud tabs
+            return (
+                <div className="flex flex-col items-center justify-center p-12 text-center space-y-6">
+                    <div className="size-20 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-500">
+                        <span className="material-symbols-outlined text-4xl">lock</span>
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Professional Access Required</h3>
+                        <p className="text-slate-500 max-w-sm mx-auto font-medium text-sm">
+                            Real-time intelligence and verification reviews require a Professional account to ensure data integrity.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => navigateToTab(AppTab.ANALYZE, TransitionMode.TAB)}
+                        className="px-8 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg"
+                    >
+                        Return to Digitizer
+                    </button>
+                    <button 
+                        onClick={() => setShowLoginModal(true)}
+                        className="text-brand-blue font-black uppercase tracking-widest text-[10px] hover:underline"
+                    >
+                        Upgrade to Professional
+                    </button>
+                </div>
+            );
+        }
+    }
+
     switch(activeTab) {
       case AppTab.REVIEW:
         return <ReviewView onSave={handleSaveReview} onVerify={handleVerify} />;
@@ -107,7 +142,7 @@ const AppContent: React.FC = () => {
         return <LabsView />;
       case AppTab.DASHBOARD:
         return (
-          <ClinicalDashboard 
+          <HealthInsightsDashboard 
             insight={insight} 
             onDismissAlert={dismissAlert} 
             onTriggerAnalysis={triggerAnalysis}
@@ -118,6 +153,7 @@ const AppContent: React.FC = () => {
         return (
           <ReportsView 
             onNavigateToAnalyze={() => navigateToTab(selectedModule === 'rx' ? AppTab.ANALYZE : AppTab.LABS, TransitionMode.TAB)}
+            onNavigateToTab={navigateToTab}
           />
         );
       case AppTab.TREATMENTS:

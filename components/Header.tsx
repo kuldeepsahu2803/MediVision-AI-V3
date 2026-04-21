@@ -35,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   selectedModule
 }) => {
   const navLinks: { id: AppTab; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>>; color: string; bg: string }[] = [
+    { id: AppTab.DASHBOARD, label: 'Intelligence', icon: StethoscopeIcon, color: 'text-brand-blue', bg: 'bg-brand-blue/5' },
     { id: AppTab.ANALYZE, label: 'Analyze', icon: AnalyzeIcon, color: 'text-primary', bg: 'bg-primary/5' },
     { id: AppTab.LABS, label: 'Labs', icon: AnalyzeIcon, color: 'text-brand-blue', bg: 'bg-brand-blue/5' },
     { id: AppTab.REVIEW, label: 'Review', icon: ClipboardDocumentCheckIcon, color: 'text-amber-500', bg: 'bg-amber-500/5' },
@@ -45,6 +46,17 @@ export const Header: React.FC<HeaderProps> = ({
 
   const availableNavLinks = useMemo(() => {
     let links = navLinks;
+    
+    // Guest role gating: Hide cloud-dependent tabs
+    if (isGuest) {
+      links = links.filter(l => 
+        l.id === AppTab.ANALYZE || 
+        l.id === AppTab.LABS || 
+        l.id === AppTab.REPORTS || 
+        l.id === AppTab.SETTINGS
+      );
+    }
+
     if (!showTreatments) {
       links = links.filter(l => l.id !== AppTab.TREATMENTS);
     }

@@ -11,34 +11,28 @@ export const Footer: React.FC = () => {
             <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">
                 <a href="#" className="hover:text-brand-blue transition-colors">Privacy Policy</a>
                 <a href="#" className="hover:text-brand-blue transition-colors">Terms of Service</a>
-                <a href="#" className="hover:text-brand-blue transition-colors">HIPAA Compliance</a>
+                <a href="#" className="hover:text-brand-blue transition-colors">Digital Ethics</a>
                 <a href="#" className="hover:text-brand-blue transition-colors">System Status</a>
             </div>
         </div>
 
         <div className="text-center space-y-4 max-w-3xl">
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed italic opacity-80">
-                This clinical analysis report is synthesized using RxSnap Clinical Core v2.1. Extraction outcomes are subject to physician sign-off. 
-                RxSnap does not provide medical diagnoses. Always consult with a licensed pharmaceutical expert before initiating clinical interventions.
+                This analysis report is synthesized using RxSnap Extraction Engine v2.1. Results are subject to manual verification. 
+                RxSnap does not provide medical diagnoses or treatment recommendations. Always consult with a licensed professional before initiating healthcare interventions.
             </p>
             <div className="h-px w-12 bg-slate-200 dark:bg-white/10 mx-auto"></div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">
-                &copy; {new Date().getFullYear()} RxSnap Systems Inc. Engineered for Clinical Excellence.
+                &copy; {new Date().getFullYear()} RxSnap Systems Inc. Data extraction platform.
             </p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-10 items-center opacity-30 grayscale transition-all hover:opacity-50">
             <div className="flex items-center gap-2.5">
-                <div className="w-6 h-6 bg-slate-400 rounded-md" />
-                <span className="text-[9px] font-black uppercase tracking-widest">ISO 27001 Certified</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">v2.1.0-release</span>
             </div>
             <div className="flex items-center gap-2.5">
-                <div className="w-6 h-6 bg-slate-400 rounded-md" />
-                <span className="text-[9px] font-black uppercase tracking-widest">SOC2 Type II</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-                <div className="w-6 h-6 bg-slate-400 rounded-md" />
-                <span className="text-[9px] font-black uppercase tracking-widest">EU-US GDPR Data Sovereignty</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Build-ID: 88721</span>
             </div>
         </div>
       </div>

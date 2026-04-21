@@ -18,12 +18,35 @@ export const usePrescriptionHistory = () => {
     if (authLoading) return;
 
     let mounted = true;
+    
+    const cleanupStaleAnalyses = async () => {
+        const threshold = 5 * 60 * 1000; // 5 minutes
+        const now = new Date().getTime();
+        
+        setHistory(prev => {
+            const hasStale = prev.some(h => 
+                h.status === 'Processing' && 
+                h.timestamp && (now - new Date(h.timestamp).getTime() > threshold)
+            );
+            
+            if (!hasStale) return prev;
+            
+            return prev.map(h => {
+                if (h.status === 'Processing' && h.timestamp && (now - new Date(h.timestamp).getTime() > threshold)) {
+                    return { ...h, status: 'Failed', error: 'Analysis Timeout: Calibrate and Retry' };
+                }
+                return h;
+            });
+        });
+    };
+
     const loadData = async () => {
       setIsLoading(true);
       try {
         const initialData = await dbService.getAllPrescriptions();
         if (mounted) {
           setHistory(initialData || []);
+          cleanupStaleAnalyses();
         }
         
         if (isLoggedIn && !hasSyncedRef.current) {
@@ -32,6 +55,7 @@ export const usePrescriptionHistory = () => {
                 const fresh = await dbService.getAllPrescriptions();
                 if (mounted) {
                   setHistory(fresh || []);
+                  cleanupStaleAnalyses();
                 }
             }).catch(syncErr => console.warn("Prescription background sync failed", syncErr));
         }

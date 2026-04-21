@@ -6,6 +6,7 @@ import { ArchiveFilterBar } from './clinical/ArchiveFilterBar.tsx';
 import { AnimatePresence, m, useMotionValue, useTransform, motion } from 'framer-motion';
 import { TrashIcon } from './icons/TrashIcon.tsx';
 import { useUI } from '../context/UIContext.tsx';
+import { useAuthSession } from '@/hooks/useAuthSession.ts';
 import { FolderIcon } from './icons/FolderIcon.tsx';
 import { DownloadIcon } from './icons/DownloadIcon.tsx';
 import { exportSinglePDF, getPDFBlobUrl, getPDFBlob } from '../lib/pdfUtils.ts';
@@ -19,6 +20,7 @@ import { SyncQueueView } from './sync/SyncQueueView.tsx';
 import { RefreshCw, List } from 'lucide-react';
 import { ConflictResolutionModal } from './sync/ConflictResolutionModal.tsx';
 import { cn } from '@/lib/utils';
+import { AppTab, TransitionMode } from '@/constants/navigation';
 import * as syncService from '@/services/syncService';
 import * as localDB from '@/services/localDatabaseService';
 
@@ -103,6 +105,10 @@ const TimelineItem: React.FC<{
                 return { text: 'Verified', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: 'verified', iconColor: 'bg-emerald-50 text-emerald-500' };
             case 'User-Corrected':
                 return { text: 'In Review', color: 'bg-amber-50 text-amber-600 border-amber-100', icon: 'edit_note', iconColor: 'bg-amber-50 text-amber-500' };
+            case 'Failed':
+                return { text: 'Calibration Required', color: 'bg-rose-50 text-rose-600 border-rose-100', icon: 'report', iconColor: 'bg-rose-50 text-rose-500' };
+            case 'Processing':
+                return { text: 'Calibrating...', color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: 'sync', iconColor: 'bg-indigo-50 text-indigo-500' };
             default:
                 return { text: 'AI-Extracted', color: 'bg-blue-50 text-blue-600 border-blue-100', icon: 'auto_fix_high', iconColor: 'bg-blue-50 text-blue-500' };
         }
@@ -167,33 +173,48 @@ const TimelineItem: React.FC<{
                     <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{timeString}</span>
                         <div className="flex items-center gap-1">
-                             <m.button 
-                                whileHover={{ scale: 1.1, y: -2 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={(e) => { e.stopPropagation(); onPreview(); }}
-                                className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all"
-                                title="Quick Preview"
-                            >
-                                <EyeIcon className="size-5" />
-                            </m.button>
-                            <m.button 
-                                whileHover={{ scale: 1.1, y: -2 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={(e) => { e.stopPropagation(); onDownload(); }}
-                                disabled={isDownloading}
-                                className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all disabled:opacity-50"
-                                title="Download PDF"
-                            >
-                                {isDownloading ? <Spinner className="size-4" /> : <DownloadIcon className="size-5" />}
-                            </m.button>
-                            <m.button 
-                                whileHover={{ scale: 1.05, x: 5 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={(e) => { e.stopPropagation(); onSelect(); }}
-                                className="ml-4 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 text-[10px] font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-sm"
-                            >
-                                DETAILS <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-                            </m.button>
+                             {report.status === 'Failed' ? (
+                                <m.button 
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                                    className="p-2.5 rounded-xl bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20 hover:scale-110 transition-all flex items-center gap-2"
+                                    title="Calibrate and Retry"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">refresh</span>
+                                    RETRY
+                                </m.button>
+                             ) : (
+                                <>
+                                 <m.button 
+                                    whileHover={{ scale: 1.1, y: -2 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={(e) => { e.stopPropagation(); onPreview(); }}
+                                    className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all"
+                                    title="Quick Preview"
+                                >
+                                    <EyeIcon className="size-5" />
+                                </m.button>
+                                <m.button 
+                                    whileHover={{ scale: 1.1, y: -2 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={(e) => { e.stopPropagation(); onDownload(); }}
+                                    disabled={isDownloading}
+                                    className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-400 hover:text-brand-blue transition-all disabled:opacity-50"
+                                    title="Download PDF"
+                                >
+                                    {isDownloading ? <Spinner className="size-4" /> : <DownloadIcon className="size-5" />}
+                                </m.button>
+                                <m.button 
+                                    whileHover={{ scale: 1.05, x: 5 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                                    className="ml-4 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 text-[10px] font-black text-brand-blue uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-sm"
+                                >
+                                    DETAILS <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                                </m.button>
+                                </>
+                             )}
                         </div>
                     </div>
                 </div>
@@ -298,12 +319,15 @@ const LabTimelineItem: React.FC<{
 // --- Main Page Component ---
 interface ReportsViewProps {
     onNavigateToAnalyze: () => void;
+    onNavigateToTab: (tab: AppTab, mode: TransitionMode) => void;
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({ 
-    onNavigateToAnalyze 
+    onNavigateToAnalyze,
+    onNavigateToTab
 }) => {
     const { showToast } = useUI();
+    const { isLoggedIn } = useAuthSession();
     const { 
         history, 
         deleteFromHistory: onDeleteReport, 
@@ -324,6 +348,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     const [dateRange, setDateRange] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+    const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
     const [viewMode, setViewMode] = useState<'timeline' | 'queue'>('timeline');
     const [conflictItem, setConflictItem] = useState<UnifiedReport | null>(null);
 
@@ -405,15 +430,26 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     const handleBatchDownload = async () => {
         if (selectedIds.size === 0) return;
         setIsBatchProcessing(true);
+        const selectedReports = unifiedHistory.filter(h => selectedIds.has(h.data.id));
+        setExportProgress({ current: 0, total: selectedReports.length });
+
         try {
             const zip = new JSZip();
-            const selectedReports = unifiedHistory.filter(h => selectedIds.has(h.data.id));
             
-            for (const item of selectedReports) {
+            for (let i = 0; i < selectedReports.length; i++) {
+                const item = selectedReports[i];
+                setExportProgress(prev => ({ ...prev, current: i + 1 }));
+                
                 if (item.type === 'rx') {
-                    const blob = await getPDFBlob(item.data as PrescriptionData);
-                    zip.file(`${item.data.patientName}_Report_${item.data.id.slice(0, 6)}.pdf`, blob);
+                    try {
+                        const blob = await getPDFBlob(item.data as PrescriptionData);
+                        zip.file(`${item.data.patientName || 'Patient'}_Report_${item.data.id.slice(0, 6)}.pdf`, blob);
+                    } catch (err) {
+                        console.error(`Failed to export report ${item.data.id}`, err);
+                    }
                 }
+                // Small delay to allow UI to breathe
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
 
             const content = await zip.generateAsync({ type: "blob" });
@@ -427,6 +463,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             console.error("Batch export failed", e);
         } finally {
             setIsBatchProcessing(false);
+            setExportProgress({ current: 0, total: 0 });
         }
     };
 
@@ -481,8 +518,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                     await localDB.saveLabToLocalDB({ ...cloudData, sync: { status: 'synced' } });
                 }
             } else {
-                // Merge: For now treated as keeping Local but we could add complex merge logic
-                showToast('Merge feature coming soon. Local version preserved.', 'info');
+                // Merge: Treat as manual review. 
+                // We keep the local version but force it into review mode so the user MUST verify it.
+                if (type === 'rx') {
+                    await localDB.saveToLocalDB({ 
+                        ...data, 
+                        sync: { ...data.sync, status: 'pending', isLocalOnly: true } 
+                    });
+                    // Navigate to review tab for this specific report
+                    onNavigateToTab(AppTab.REVIEW, TransitionMode.DRILL);
+                } else {
+                    await localDB.saveLabToLocalDB({ 
+                        ...data, 
+                        sync: { ...data.sync, status: 'pending', isLocalOnly: true } 
+                    });
+                    onNavigateToTab(AppTab.LABS, TransitionMode.TAB);
+                }
+                showToast('Action: Manual Review Required. Please verify all fields.', 'info');
             }
             
             showToast('Conflict resolved successfully.', 'success');
@@ -542,8 +594,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 </div>
 
                 <div className="mt-12 px-6 py-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 inline-flex items-center gap-3">
-                    <span className="material-symbols-outlined text-slate-400 text-lg">verified_user</span>
-                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Secure HIPAA-Ready Cloud Storage Active</span>
+                    <span className="material-symbols-outlined text-slate-400 text-lg">{isLoggedIn ? 'verified_user' : 'visibility_off'}</span>
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">
+                        {isLoggedIn ? 'Encrypted Cloud Storage Synchronized' : 'Local Session Data (IndexedDB Storage)'}
+                    </span>
                 </div>
             </div>
         );
@@ -563,21 +617,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                         <List className="size-3.5" />
                         Timeline
                     </button>
-                    <button 
-                        onClick={() => setViewMode('queue')}
-                        className={cn(
-                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all relative",
-                            viewMode === 'queue' ? "bg-brand-blue text-white shadow-lg shadow-brand-blue/20" : "text-slate-400 hover:text-slate-600"
-                        )}
-                    >
-                        <RefreshCw className={cn("size-3.5", stats.syncs > 0 && "animate-spin")} />
-                        Sync Queue
-                        {stats.syncs > 0 && (
-                            <span className="absolute -top-1 -right-1 size-4 bg-rose-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white dark:border-zinc-900">
-                                {stats.syncs}
-                            </span>
-                        )}
-                    </button>
+                    {isLoggedIn && (
+                        <button 
+                            onClick={() => setViewMode('queue')}
+                            className={cn(
+                                "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all relative",
+                                viewMode === 'queue' ? "bg-brand-blue text-white shadow-lg shadow-brand-blue/20" : "text-slate-400 hover:text-slate-600"
+                            )}
+                        >
+                            <RefreshCw className={cn("size-3.5", stats.syncs > 0 && "animate-spin")} />
+                            Sync Queue
+                            {stats.syncs > 0 && (
+                                <span className="absolute -top-1 -right-1 size-4 bg-rose-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white dark:border-zinc-900">
+                                    {stats.syncs}
+                                </span>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -586,7 +642,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div className="space-y-5">
                     <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 bg-white/50 dark:bg-white/5 px-5 py-2 rounded-full border border-slate-100 dark:border-white/5 w-fit shadow-sm backdrop-blur-md">
                         <HistoryLogIcon className="size-3.5" />
-                        <span>Prescription Archive</span>
+                        <span>{isLoggedIn ? 'Prescription Archive' : 'Session History'}</span>
                         <span className="size-1 rounded-full bg-slate-300"></span>
                         <span>Clinical Log</span>
                         <span className="size-1 rounded-full bg-slate-300"></span>
@@ -642,18 +698,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                                 {stats.total} <span className="text-2xl text-slate-400 font-medium">Reports</span>
                             </h2>
                         </div>
-                        <div className="mt-8 flex items-center gap-4">
-                            <div className="flex -space-x-3">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="size-10 rounded-full border-4 border-white dark:border-zinc-900 bg-slate-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
-                                        <img src={`https://picsum.photos/seed/user${i}/100/100`} alt="User" className="size-full object-cover" referrerPolicy="no-referrer" />
-                                    </div>
-                                ))}
-                                <div className="size-10 rounded-full border-4 border-white dark:border-zinc-900 bg-brand-blue text-white flex items-center justify-center text-[10px] font-bold">
-                                    +12
-                                </div>
+                        <div className="mt-8 flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
+                                <span className="material-symbols-outlined text-[20px]">verified_user</span>
                             </div>
-                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 italic">Collaborative archive active</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">
+                                {isLoggedIn ? 'Cloud Archive Synchronized' : 'Local Workspace Active'}
+                            </p>
                         </div>
                     </div>
                     <div className="absolute -right-10 -bottom-10 size-48 bg-brand-blue/5 rounded-full blur-3xl group-hover:bg-brand-blue/10 transition-colors duration-700" />
@@ -788,29 +839,22 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                                 </div>
                                 <span className="text-xs font-black">{labHistory.length}</span>
                             </button>
-                            <button className="w-full flex items-center justify-between p-5 rounded-[1.5rem] text-slate-400 opacity-40 cursor-not-allowed border border-transparent">
-                                <div className="flex items-center gap-4">
-                                    <span className="material-symbols-outlined text-[22px]">radiology</span>
-                                    <span className="text-xs font-black uppercase tracking-widest">Imaging</span>
-                                </div>
-                                <span className="text-xs font-black">0</span>
-                            </button>
                         </div>
                     </div>
 
-                    {/* Collaborative Upload CTA */}
+                    {/* Import Documents CTA */}
                     <div className="relative overflow-hidden rounded-[3rem] bg-slate-900 p-10 text-white shadow-2xl group border border-white/10">
                         <div className="relative z-10">
                             <div className="size-20 bg-brand-blue/20 rounded-[1.5rem] flex items-center justify-center text-brand-blue mb-8 border border-brand-blue/20 group-hover:scale-110 duration-500">
                                 <span className="material-symbols-outlined text-[48px]">cloud_upload</span>
                             </div>
-                            <h5 className="text-3xl font-black mb-4 tracking-tighter">Expand History</h5>
-                            <p className="mb-10 text-base text-slate-400 font-medium leading-relaxed">Sync external PDF results to maintain a holistic patient timeline.</p>
+                            <h5 className="text-3xl font-black mb-4 tracking-tighter">Local Import</h5>
+                            <p className="mb-10 text-base text-slate-400 font-medium leading-relaxed">Import and digitize medical documents to keep your session history organized.</p>
                             <button 
                                 onClick={onNavigateToAnalyze}
                                 className="w-full rounded-2xl bg-white/10 py-5 text-xs font-black uppercase tracking-widest text-white hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 active:scale-95"
                             >
-                                Browse Medical Files
+                                Browse Files
                             </button>
                         </div>
                         {/* Decorative Background Elements */}
@@ -843,11 +887,21 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                         <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] p-4 shadow-3xl flex items-center justify-between gap-6 backdrop-blur-xl">
                             <div className="flex items-center gap-6 pl-4">
                                 <div className="size-10 rounded-full bg-brand-blue flex items-center justify-center text-white font-black text-sm shadow-glow ring-4 ring-brand-blue/20">
-                                    {selectedIds.size}
+                                    {isBatchProcessing ? (
+                                        <span className="text-[10px]">{Math.round((exportProgress.current / exportProgress.total) * 100)}%</span>
+                                    ) : (
+                                        selectedIds.size
+                                    )}
                                 </div>
                                 <div>
-                                    <p className="text-xs font-black text-white uppercase tracking-widest leading-none">Reports Selected</p>
-                                    <button onClick={toggleSelectAll} className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors mt-1 uppercase tracking-tight">
+                                    <p className="text-xs font-black text-white uppercase tracking-widest leading-none">
+                                        {isBatchProcessing ? `Archiving Documents...` : `Reports Selected`}
+                                    </p>
+                                    <button 
+                                        disabled={isBatchProcessing}
+                                        onClick={toggleSelectAll} 
+                                        className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors mt-1 uppercase tracking-tight disabled:opacity-50"
+                                    >
                                         {selectedIds.size === filteredHistory.length ? 'Deselect All' : 'Select All'}
                                     </button>
                                 </div>
