@@ -24,7 +24,7 @@ import {
   CartesianGrid
 } from 'recharts';
 
-interface ClinicalDashboardProps {
+interface HealthInsightsDashboardProps {
   insight: ClinicalInsight | null;
   onDismissAlert: (id: string) => void;
   onTriggerAnalysis: () => void;

@@ -16,21 +16,78 @@ const UNIT_CONVERSION: Record<string, Record<string, number>> = {
   'glucose': { 'mmol/L': 18, 'mg/dL': 1 },
   'creatinine': { 'umol/L': 0.0113, 'mg/dL': 1 },
   'hemoglobin': { 'g/L': 0.1, 'g/dL': 1 },
+  'cholesterol': { 'mmol/L': 38.67, 'mg/dL': 1 }, // Total Cholesterol
+  'hdl': { 'mmol/L': 38.67, 'mg/dL': 1 },         // HDL Cholesterol
+  'ldl': { 'mmol/L': 38.67, 'mg/dL': 1 },         // LDL Cholesterol
+  'triglycerides': { 'mmol/L': 88.57, 'mg/dL': 1 },
+  'bun': { 'mmol/L': 2.801, 'mg/dL': 1 },
+  'urea': { 'mmol/L': 2.801, 'mg/dL': 1 },
+  'calcium': { 'mmol/L': 4.008, 'mEq/L': 2.004, 'mg/dL': 1 },
+  'magnesium': { 'mmol/L': 2.43, 'mEq/L': 1.215, 'mg/dL': 1 },
+  'iron': { 'umol/L': 5.58, 'ug/dL': 1 },
+  't4': { 'nmol/L': 0.0777, 'ug/dL': 1 },           // Thyroxine (T4)
+  't3': { 'nmol/L': 65.1, 'ng/dL': 1, 'ng/mL': 100 }, // Triiodothyronine (T3)
+  'testosterone': { 'nmol/L': 28.8, 'ng/dL': 1 },
+  'ast': { 'ukat/L': 60, 'U/L': 1 },
+  'alt': { 'ukat/L': 60, 'U/L': 1 },
+  'alp': { 'ukat/L': 60, 'U/L': 1 },
+  'ggt': { 'ukat/L': 60, 'U/L': 1 },
+  'amylase': { 'ukat/L': 60, 'U/L': 1 },
+  'lipase': { 'ukat/L': 60, 'U/L': 1 },
 };
+
+function standardizeUnitStr(unit: string): string {
+  if (!unit) return '';
+  const upper = unit.trim().toUpperCase();
+  
+  if (['MMOL/L', 'MMOL/LITRE', 'MMOL/LITER'].includes(upper)) return 'mmol/L';
+  if (['MG/DL', 'MG/100ML', 'MG%'].includes(upper)) return 'mg/dL';
+  if (['UMOL/L', 'UMOL/LITRE', 'UMOL/LITER', 'μMOL/L', 'µMOL/L'].includes(upper)) return 'umol/L';
+  if (['G/DL', 'G/100ML', 'GM/DL'].includes(upper)) return 'g/dL';
+  if (['G/L', 'G/LITRE', 'G/LITER'].includes(upper)) return 'g/L';
+  if (['MEQ/L', 'MEQ/LITRE', 'MEQ/LITER'].includes(upper)) return 'mEq/L';
+  if (['UI/L', 'U/L', 'U/LITRE', 'U/LITER', 'IU/L', 'IU/LITRE', 'IU/LITER'].includes(upper)) return 'U/L';
+  if (['UKAT/L', 'UKAT/LITRE', 'UKAT/LITER', 'μKAT/L', 'µKAT/L'].includes(upper)) return 'ukat/L';
+  if (['NMOL/L', 'NMOL/LITRE', 'NMOL/LITER'].includes(upper)) return 'nmol/L';
+  if (['NG/DL', 'NG/100ML'].includes(upper)) return 'ng/dL';
+  if (['NG/ML'].includes(upper)) return 'ng/mL';
+  if (['UG/DL', 'MCG/DL', 'μG/DL', 'µG/DL'].includes(upper)) return 'ug/dL';
+  if (['UG/L', 'MCG/L', 'UG/LITRE', 'UG/LITER', 'MCG/LITRE', 'MCG/LITER'].includes(upper)) return 'ug/L';
+  if (['UIU/ML', 'UIU/MLITRE', 'UIU/MLITER', 'UIU/M_L', 'μIU/ML', 'µIU/ML', 'MIU/L'].includes(upper)) return 'uIU/mL';
+  
+  return unit;
+}
 
 function normalizeValue(test: string, value: number, unit: string): { value: number, unit: string } {
   const normalizedTest = test.toLowerCase();
+  const stdUnit = standardizeUnitStr(unit);
+  
   for (const [key, conversions] of Object.entries(UNIT_CONVERSION)) {
-    if (normalizedTest.includes(key)) {
-      if (conversions[unit]) {
-        return { value: value * conversions[unit], unit: Object.keys(conversions).find(u => conversions[u] === 1) || unit };
+    let isMatch: boolean;
+    
+    if (key === 'hemoglobin') {
+      isMatch = normalizedTest.includes('hemoglobin') || normalizedTest.includes(' hb ') || normalizedTest.endsWith(' hb') || normalizedTest.startsWith('hb ') || normalizedTest === 'hb';
+    } else if (key === 'cholesterol') {
+      // Avoid matching sub-fractions as total cholesterol
+      isMatch = normalizedTest.includes('cholesterol') && !normalizedTest.includes('hdl') && !normalizedTest.includes('ldl');
+    } else {
+      isMatch = normalizedTest.includes(key);
+    }
+    
+    if (isMatch) {
+      if (conversions[stdUnit]) {
+        const targetUnit = Object.keys(conversions).find(u => conversions[u] === 1) || stdUnit;
+        return { value: value * conversions[stdUnit], unit: targetUnit };
       }
     }
   }
-  return { value, unit };
+  return { value, unit: stdUnit || unit };
 }
 
+let cachedRefRanges: any[] | null = null;
+
 export async function loadReferenceRanges(): Promise<any[]> {
+  if (cachedRefRanges) return cachedRefRanges;
   try {
     const response = await fetch('/data/blood_test_reference_ranges_v2.csv');
     if (!response.ok) throw new Error('Failed to load reference ranges');
@@ -40,7 +97,10 @@ export async function loadReferenceRanges(): Promise<any[]> {
         header: true,
         dynamicTyping: true,
         skipEmptyLines: true,
-        complete: (results) => resolve(results.data),
+        complete: (results) => {
+          cachedRefRanges = results.data;
+          resolve(results.data);
+        },
       });
     });
   } catch (error) {
@@ -106,7 +166,7 @@ export async function analyzeBloodReport(
   }));
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+    model: "gemini-3.1-flash-preview",
     contents: [
       {
         parts: [

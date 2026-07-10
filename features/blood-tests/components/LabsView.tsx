@@ -115,13 +115,36 @@ export const LabsView: React.FC = () => {
       </div>
 
       {isAnalyzing && (
-        <div className="p-12 text-center space-y-8 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-white/5 shadow-xl">
+        <div className="p-16 text-center space-y-12 bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-white/5 shadow-2xl relative overflow-hidden">
+          {/* Subtle background glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-brand-blue/5 blur-[100px] rounded-full" />
+          
           <ProgressStepper step={analysisStep} />
-          <div className="space-y-4">
-            <Spinner className="mx-auto" />
-            <p className="text-slate-500 font-bold animate-pulse">
-              {analysisStep === 1 ? 'Extracting OCR Data...' : 'Mapping to Clinical Standards...'}
-            </p>
+          
+          <div className="relative z-10 space-y-6">
+            <div className="relative size-24 mx-auto">
+              <Spinner className="size-full text-brand-blue" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <motion.div 
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="size-12 rounded-full bg-brand-blue/10 flex items-center justify-center"
+                >
+                  <span className="material-symbols-outlined text-brand-blue text-xl">
+                    {analysisStep === 1 ? 'document_search' : 'clinical_notes'}
+                  </span>
+                </motion.div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-slate-900 dark:text-white font-black uppercase tracking-widest text-sm">
+                {analysisStep === 1 ? 'Phase 1: Deep Vision OCR' : 'Phase 2: Clinical Normalization'}
+              </p>
+              <p className="text-slate-500 font-medium text-xs animate-pulse">
+                {analysisStep === 1 ? 'Extracting raw biomarkers from report...' : 'Mapping values to laboratory reference ranges...'}
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -470,23 +493,31 @@ const ProgressStepper = ({ step }: { step: number }) => {
   ];
 
   return (
-    <div className="flex items-center justify-center gap-8 mb-12">
+    <div className="flex items-center justify-center gap-4 md:gap-12 mb-6">
       {steps.map((s, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <div className={cn(
-            "size-10 rounded-full flex items-center justify-center text-sm font-black transition-all",
-            step > i + 1 ? "bg-brand-green text-white" : step === i + 1 ? "bg-brand-blue text-white scale-110 shadow-lg" : "bg-slate-100 dark:bg-white/5 text-slate-400"
-          )}>
-            {step > i + 1 ? <CheckCircle className="size-5" /> : i + 1}
+        <React.Fragment key={i}>
+          <div className="flex flex-col items-center gap-3">
+            <div className={cn(
+              "size-12 rounded-2xl flex items-center justify-center text-sm font-black transition-all duration-500",
+              step > i + 1 
+                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
+                : step === i + 1 
+                  ? "bg-brand-blue text-white scale-110 shadow-xl shadow-brand-blue/25 ring-4 ring-brand-blue/10" 
+                  : "bg-slate-100 dark:bg-white/5 text-slate-400"
+            )}>
+              {step > i + 1 ? <CheckCircle className="size-6" /> : i + 1}
+            </div>
+            <span className={cn(
+              "text-[10px] font-black uppercase tracking-widest text-center max-w-[80px]",
+              step === i + 1 ? "text-slate-900 dark:text-white" : "text-slate-400 font-bold"
+            )}>
+              {s.label}
+            </span>
           </div>
-          <span className={cn(
-            "text-[10px] font-black uppercase tracking-widest",
-            step === i + 1 ? "text-slate-900 dark:text-white" : "text-slate-400"
-          )}>
-            {s.label}
-          </span>
-          {i < steps.length - 1 && <div className="w-12 h-px bg-slate-200 dark:bg-white/10" />}
-        </div>
+          {i < steps.length - 1 && (
+            <div className="w-8 md:w-16 h-px bg-slate-200 dark:bg-white/10 mb-8" />
+          )}
+        </React.Fragment>
       ))}
     </div>
   );

@@ -31,21 +31,16 @@ export const useAuthSession = () => {
       const { error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
       
       if (error) {
-        if (error.message.includes('Failed to fetch')) {
-          throw new Error("Network error: Could not connect to Supabase. Check your URL and internet connection.");
-        }
         throw error;
       }
       
       setCloudStatus('ENABLED');
       return true;
     } catch (e: any) {
-      console.warn("Clinical Infrastructure: Cloud node unreachable.");
+      console.warn("Clinical Infrastructure: Cloud node unreachable.", e);
       setCloudStatus('DEGRADED');
-      // If it's a fetch error, it's likely a configuration or network issue
-      if (e.message?.includes('Failed to fetch')) {
-        setError("Failed to connect to cloud infrastructure. Operating in local-only mode.");
-      }
+      // Set a clean warning that clinical infrastructure is in local-only mode
+      setError("Could not connect to cloud infrastructure. Operating in local-only mode.");
       return false;
     }
   }, []);

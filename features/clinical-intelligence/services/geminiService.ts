@@ -298,3 +298,5 @@ export const getDrugReferenceInfo = async (drugName: string): Promise<DrugRefere
     handleGeminiError(e, "Failed to fetch drug reference info.");
   }
 };
+
+
